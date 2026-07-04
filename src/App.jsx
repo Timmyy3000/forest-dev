@@ -325,7 +325,7 @@ function App() {
               >
                 GitHub
               </a>
-              &nbsp;·&nbsp;
+              <span style={{ display: 'inline-block', width: 26, textAlign: 'center', opacity: 0.5 }}>·</span>
               <a
                 href="/agents.md"
                 className="fx-focus"
