@@ -89,15 +89,12 @@ export function mountForest(root) {
     })
   }
 
-  const unwire = wireCrossLink(root)
-
   return () => {
     ctx.dead = true
     ctx.timers.forEach(clearTimeout)
     ctx.anims.forEach((a) => {
       if (a && typeof a.pause === 'function') a.pause()
     })
-    unwire()
   }
 }
 
@@ -434,45 +431,4 @@ function startPulses(ctx, run, later) {
     if (!ctx.dead) later(spawn, R(900, 1900))
   }
   later(spawn, 3200)
-}
-
-function wireCrossLink(root) {
-  const cards = Array.from(root.querySelectorAll('.loop-card'))
-  const setGlow = (target, on) => {
-    const groups =
-      target === 'all'
-        ? Array.from(root.querySelectorAll('[data-tree]'))
-        : Array.from(root.querySelectorAll('[data-tree="' + target + '"]'))
-    groups.forEach((g) => {
-      g.style.transition = 'filter .28s'
-      g.style.filter = on ? 'drop-shadow(0 0 9px rgba(163,197,133,0.8)) brightness(1.35)' : ''
-    })
-  }
-  const handlers = []
-  cards.forEach((card) => {
-    const t = card.getAttribute('data-target')
-    const on = () => {
-      setGlow(t, true)
-      card.style.borderColor = 'rgba(163,197,133,0.4)'
-      card.style.background = '#1C2F25'
-    }
-    const off = () => {
-      setGlow(t, false)
-      card.style.borderColor = ''
-      card.style.background = ''
-    }
-    card.addEventListener('mouseenter', on)
-    card.addEventListener('mouseleave', off)
-    card.addEventListener('focus', on)
-    card.addEventListener('blur', off)
-    handlers.push({ card, on, off })
-  })
-  return () => {
-    handlers.forEach(({ card, on, off }) => {
-      card.removeEventListener('mouseenter', on)
-      card.removeEventListener('mouseleave', off)
-      card.removeEventListener('focus', on)
-      card.removeEventListener('blur', off)
-    })
-  }
 }
