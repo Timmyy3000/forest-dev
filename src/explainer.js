@@ -1,4 +1,5 @@
 import { animate, createTimeline } from 'animejs'
+import { ICONS } from './icons.js'
 
 const NS = 'http://www.w3.org/2000/svg'
 const el = (n) => document.createElementNS(NS, n)
@@ -69,10 +70,12 @@ function text(x, y, str, { size = 12, fill = DIM, anchor = 'middle', weight = 40
   return t
 }
 
-// a rounded chip with a mono label, centered on x
-function chip(x, y, label, color, { w, h = 26, fs = 12.5 } = {}) {
+// a rounded chip with a mono label, centered on x; optional brand icon and status dot
+function chip(x, y, label, color, { w, h = 26, fs = 12.5, icon, dot } = {}) {
   const g = el('g')
-  const width = w || label.length * 7.6 + 22
+  const iconW = icon ? 19 : 0
+  const dotW = dot ? 14 : 0
+  const width = w || label.length * 7.6 + 22 + iconW + dotW
   const r = el('rect')
   r.setAttribute('x', x - width / 2)
   r.setAttribute('y', y - h / 2)
@@ -83,8 +86,27 @@ function chip(x, y, label, color, { w, h = 26, fs = 12.5 } = {}) {
   r.setAttribute('stroke', color)
   r.setAttribute('stroke-opacity', '0.55')
   g.appendChild(r)
-  const t = text(x, y + 4.5, label, { size: fs, fill: PAPER })
+  if (icon) {
+    const ig = el('g')
+    const sc = 12.5 / 24
+    ig.setAttribute('transform', `translate(${(x - width / 2 + 9).toFixed(1)}, ${(y - 6.2).toFixed(1)}) scale(${sc.toFixed(3)})`)
+    const ip = el('path')
+    ip.setAttribute('d', icon.d)
+    ip.setAttribute('fill', icon.color)
+    ig.appendChild(ip)
+    g.appendChild(ig)
+  }
+  const t = text(x + iconW / 2 - dotW / 2, y + 4.5, label, { size: fs, fill: PAPER })
   g.appendChild(t)
+  if (dot) {
+    const c = el('circle')
+    c.setAttribute('cx', x + width / 2 - 10)
+    c.setAttribute('cy', y)
+    c.setAttribute('r', 3)
+    c.setAttribute('fill', dot)
+    g.appendChild(c)
+    g._dot = c
+  }
   g._w = width
   return g
 }
@@ -147,58 +169,84 @@ function showAll(nodes) {
 
 function scene1(g, ctx, reduced) {
   g.innerHTML = ''
-  const Y = 205
-  const folder = chip(320, 52, 'repo/  ·  main', PAPER)
+  const Y = 215
+  const folder = chip(320, 44, 'repo/  \u00b7  main', PAPER, { icon: ICONS.git })
   const line = hline(90, 550, Y)
   const lineLbl = text(90, Y + 24, 'main', { size: 11.5, anchor: 'start' })
-  const agent = chip(150, Y - 46, 'agent-1', MOSS, { fs: 11.5, h: 23 })
-  const st = status(196, Y - 42, 'working', MOSS)
-  const xs = [160, 250, 340, 430, 520]
-  const commits = xs.map((x) => commit(x, Y, MOSS))
-  const note = text(320, 285, 'one change at a time, in a single line', { size: 12 })
-  note.style.opacity = 0
-  const ann1 = label(320, 78, 'the repo — one working folder')
-  const ann2 = label(150, Y - 74, 'a coding agent')
+
+  // the queue: one agent works, the rest wait in line
+  const QX = 122
+  const SLOTS = [126, 158, 190]
+  const claude = chip(QX, SLOTS[0], 'claude', MOSS, { fs: 11, h: 22, icon: ICONS.claude })
+  const codex = chip(QX, SLOTS[1], 'codex', BLUE, { fs: 11, h: 22, icon: ICONS.codex })
+  const cursor = chip(QX, SLOTS[2], 'cursor', AMBER, { fs: 11, h: 22, icon: ICONS.cursor })
+  const sCodex = label(178, SLOTS[1] + 4, 'in queue\u2026', 'start')
+  const sCursor = label(178, SLOTS[2] + 4, 'in queue\u2026', 'start')
+
+  const ann1 = label(320, 70, 'the repo \u2014 one working folder')
+  const annQ = label(78, 98, 'agents queue for the one checkout', 'start')
   const ann3 = label(550, Y + 44, 'each dot = one commit', 'end')
-  ;[line, lineLbl, folder, agent, st, ...commits, note, ann1, ann2, ann3].forEach((n) => g.appendChild(n))
+
+  const xsA = [200, 280, 360]
+  const xsB = [440, 520]
+  const cA = xsA.map((x) => commit(x, Y, MOSS))
+  const cB = xsB.map((x) => commit(x, Y, BLUE))
+  const note = text(320, 292, 'one at a time \u2014 everyone else waits in line', { size: 12 })
+  note.style.opacity = 0
+  ;[line, lineLbl, folder, claude, codex, cursor, sCodex, sCursor, ann1, annQ, ann3, ...cA, ...cB, note].forEach((n) =>
+    g.appendChild(n)
+  )
 
   if (reduced) {
-    showAll([line, ...commits, note])
+    showAll([line, ...cA, ...cB, note])
     return
   }
 
-  agent.style.opacity = 0
-  st.style.opacity = 0
-
   const play = () => {
     if (ctx.dead) return
-    commits.forEach((c) => (c.style.transform = 'scale(0)'))
+    ;[...cA, ...cB].forEach((c) => (c.style.transform = 'scale(0)'))
     line.style.strokeDashoffset = line._len
     note.style.opacity = 0
-    agent.style.opacity = 0
-    st.style.opacity = 0
-    reveal(ctx, line, 650)
-    ctx.run([agent, st], { opacity: [0, 1], duration: 400, delay: 500 })
-    xs.forEach((x, i) => {
-      const t = 800 + i * 620
-      popIn(ctx, commits[i], t)
-      ctx.run(agent, { translateX: x - 150, duration: 480, delay: Math.max(0, t - 380), ease: 'inOutQuad' })
-      ctx.run(st, { translateX: x - 150, duration: 480, delay: Math.max(0, t - 380), ease: 'inOutQuad' })
+    ;[claude, codex, cursor, sCodex, sCursor].forEach((n) => {
+      n.style.transform = ''
+      n.style.opacity = 1
     })
-    ctx.run(note, { opacity: [0, 1], duration: 500, delay: 800 + xs.length * 620 })
+
+    reveal(ctx, line, 600)
+
+    // claude steps out of the queue onto the line and commits
+    ctx.run(claude, { translateX: xsA[0] - QX, translateY: Y - 40 - SLOTS[0], duration: 550, delay: 900, ease: 'inOutQuad' })
+    xsA.forEach((x, i) => {
+      popIn(ctx, cA[i], 1600 + i * 600)
+      if (i > 0) ctx.run(claude, { translateX: x - QX, duration: 420, delay: 1250 + i * 600, ease: 'inOutQuad' })
+    })
+
+    // claude finishes; codex moves up and takes over; cursor shuffles forward
+    ctx.later(() => {
+      if (ctx.dead) return
+      ctx.run(claude, { opacity: [1, 0], duration: 400 })
+      ctx.run(sCodex, { opacity: [1, 0], duration: 300 })
+      ctx.run(codex, { translateX: xsB[0] - QX, translateY: Y - 40 - SLOTS[1], duration: 600, delay: 250, ease: 'inOutQuad' })
+      ctx.run(cursor, { translateY: SLOTS[0] - SLOTS[2], duration: 450, delay: 250, ease: 'inOutQuad' })
+      ctx.run(sCursor, { translateY: SLOTS[0] - SLOTS[2], duration: 450, delay: 250, ease: 'inOutQuad' })
+    }, 3500)
+    xsB.forEach((x, i) => {
+      popIn(ctx, cB[i], 4500 + i * 600)
+      if (i > 0) ctx.run(codex, { translateX: x - QX, duration: 420, delay: 4150 + i * 600, ease: 'inOutQuad' })
+    })
+
+    ctx.run(note, { opacity: [0, 1], duration: 500, delay: 5600 })
     ctx.later(() => {
       ctx.run(g, {
         opacity: [1, 0],
         duration: 400,
         onComplete: () => {
           if (ctx.dead) return
-          agent.style.transform = ''
-          st.style.transform = ''
           g.style.opacity = 1
           play()
         },
       })
-    }, 800 + xs.length * 620 + 1900)
+    }, 8100)
   }
   play()
 }
@@ -234,12 +282,12 @@ function scene2(g, ctx, reduced) {
   const lblA = text(556, YA + 4, 'feat-a', { size: 11.5, fill: MOSS, anchor: 'start' })
   const lblB = text(556, YB + 4, 'feat-b', { size: 11.5, fill: BLUE, anchor: 'start' })
 
-  const folder = chip(320, 40, 'repo/  ·  one working folder', PAPER)
+  const folder = chip(320, 40, 'repo/  ·  one working folder', PAPER, { icon: ICONS.git })
   const head = chip(330, YA, 'HEAD', AMBER, { fs: 10.5, h: 20 })
   head.style.transformBox = 'fill-box'
 
-  const agentA = chip(126, YA, 'agent-1', MOSS, { fs: 11, h: 22 })
-  const agentB = chip(126, YB, 'agent-2', BLUE, { fs: 11, h: 22 })
+  const agentA = chip(126, YA, 'claude', MOSS, { fs: 11, h: 22, icon: ICONS.claude })
+  const agentB = chip(126, YB, 'codex', BLUE, { fs: 11, h: 22, icon: ICONS.codex })
   const stA = status(90, YA - 22, 'working', MOSS)
   const stB = status(90, YB - 22, 'waiting…', AMBER)
 
@@ -334,21 +382,22 @@ function scene2(g, ctx, reduced) {
 function scene3(g, ctx, reduced) {
   g.innerHTML = ''
   const cols = [
-    { x: 150, color: MOSS, name: 'dark-mode/', agent: 'agent-1' },
-    { x: 320, color: BLUE, name: 'kill-jank/', agent: 'agent-2' },
-    { x: 490, color: AMBER, name: 'fix-prod/', agent: 'agent-3' },
+    { x: 150, color: MOSS, name: 'dark-mode/', agent: 'claude', icon: ICONS.claude },
+    { x: 320, color: BLUE, name: 'kill-jank/', agent: 'codex', icon: ICONS.codex },
+    { x: 490, color: AMBER, name: 'fix-prod/', agent: 'cursor', icon: ICONS.cursor },
   ]
-  const TOP = 66
-  const BOT = 238
-  const GIT_Y = 296
+  const TOP = 74
+  const BOT = 240
+  const GIT_Y = 298
 
-  const gitChip = chip(320, GIT_Y, 'one shared .git', PAPER, { fs: 11.5, h: 24 })
-  const parts = [gitChip]
+  const gitChip = chip(320, GIT_Y, 'one shared .git', PAPER, { fs: 11.5, h: 24, icon: ICONS.git })
+  const ann1 = label(320, 20, 'each folder is a worktree \u2014 same repo, its own branch')
+  const parts = [gitChip, ann1]
   const perCol = cols.map((c) => {
+    const agent = chip(c.x, 42, c.agent, c.color, { fs: 11, h: 22, icon: c.icon, dot: c.color })
     const folder = chip(c.x, TOP, c.name, c.color, { fs: 11.5, h: 24 })
-    const agent = status(c.x - 34, TOP - 22, 'working', c.color)
     const line = el('path')
-    line.setAttribute('d', `M${c.x},${BOT} L${c.x},${TOP + 22}`)
+    line.setAttribute('d', `M${c.x},${BOT} L${c.x},${TOP + 20}`)
     line.setAttribute('stroke', c.color)
     line.setAttribute('stroke-width', 2)
     line.setAttribute('stroke-opacity', '0.8')
@@ -364,21 +413,26 @@ function scene3(g, ctx, reduced) {
     link.setAttribute('stroke-width', 1.3)
     link.setAttribute('fill', 'none')
     link.setAttribute('stroke-dasharray', '3 5')
-    const ys = [210, 172, 134, 96]
+    const ys = [216, 178, 140, 108]
     const commits = ys.map((y) => commit(c.x, y, c.color, 4))
-    parts.push(link, line, folder, agent, ...commits)
+    parts.push(link, line, agent, folder, ...commits)
     return { ...c, line, commits, folder, agent }
   })
-  const note = text(320, GIT_Y + 26, 'every branch gets its own folder — everyone works at once', { size: 12 })
+  const note = text(320, GIT_Y + 26, 'every branch gets its own folder \u2014 everyone works at once', { size: 12 })
   note.style.opacity = 0
-  const ann1 = label(320, 30, 'each folder is a worktree — same repo, its own branch')
-  parts.push(note, ann1)
+  parts.push(note)
   parts.forEach((n) => g.appendChild(n))
 
   if (reduced) {
     showAll([note, ...perCol.flatMap((c) => [c.line, ...c.commits])])
     return
   }
+
+  // working dots pulse the whole time \u2014 everyone is live at once
+  perCol.forEach((c, i) => {
+    if (c.agent._dot)
+      ctx.run(c.agent._dot, { opacity: [1, 0.25], duration: 900, delay: i * 300, loop: true, alternate: true, ease: 'inOutSine' })
+  })
 
   const play = () => {
     if (ctx.dead) return
@@ -389,7 +443,7 @@ function scene3(g, ctx, reduced) {
     note.style.opacity = 0
     perCol.forEach((c, i) => {
       reveal(ctx, c.line, 700, 200 + i * 120)
-      // interleaved commits — everyone lands work at the same time
+      // interleaved commits \u2014 everyone lands work at the same time
       c.commits.forEach((n, k) => popIn(ctx, n, 900 + k * 700 + i * 230))
     })
     ctx.run(note, { opacity: [0, 1], duration: 500, delay: 900 + 4 * 700 })
