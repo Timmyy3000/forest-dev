@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { AppleLogo, LinuxLogo, WindowsLogo } from '@phosphor-icons/react'
 import { mountForest } from './forest.js'
+import WorktreeModal from './WorktreeModal.jsx'
 
 const INSTALLS = {
   unix: { prompt: '$', cmd: 'curl -fsSL https://forest.timi.click/install.sh | sh' },
@@ -19,6 +20,7 @@ function App() {
   const [shell, setShell] = useState(() =>
     typeof navigator !== 'undefined' && /Win/.test(navigator.platform || '') ? 'win' : 'unix'
   )
+  const [explainerOpen, setExplainerOpen] = useState(false)
 
   useEffect(() => {
     const dispose = mountForest(rootRef.current)
@@ -339,6 +341,27 @@ function App() {
               >
                 free &amp; open source&nbsp;&nbsp;·&nbsp;&nbsp;MIT license
               </p>
+              <p style={{ margin: '20px auto 0', fontSize: 14 }}>
+                <button
+                  type="button"
+                  className="fx-focus"
+                  onClick={() => setExplainerOpen(true)}
+                  style={{
+                    background: 'none',
+                    border: 'none',
+                    padding: 0,
+                    cursor: 'pointer',
+                    font: 'inherit',
+                    color: '#A3C585',
+                    textDecoration: 'underline',
+                    textUnderlineOffset: 4,
+                    textDecorationStyle: 'dotted',
+                    textDecorationColor: 'rgba(163,197,133,0.5)',
+                  }}
+                >
+                  How do worktrees work? 🤷🏾‍♂️
+                </button>
+              </p>
               <span
                 aria-live="polite"
                 style={{ position: 'absolute', width: 1, height: 1, overflow: 'hidden', clip: 'rect(0 0 0 0)' }}
@@ -409,6 +432,8 @@ function App() {
           </footer>
         </div>
       </section>
+
+      <WorktreeModal open={explainerOpen} onClose={() => setExplainerOpen(false)} />
     </div>
   )
 }
