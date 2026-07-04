@@ -25,10 +25,10 @@ const TREES = [
   { xf: 0.225, h: 150, depth: 3, layer: 0.5 },
   { xf: 0.32, h: 118, depth: 3, layer: 0.32 },
   { xf: 0.41, h: 140, depth: 3, layer: 0.5, status: 'blocked' },
-  { xf: 0.775, h: 108, depth: 3, layer: 0.28 },
+  { xf: 0.5, h: 108, depth: 3, layer: 0.28 },
   { xf: 0.59, h: 134, depth: 3, layer: 0.44, status: 'merged' },
   { xf: 0.68, h: 150, depth: 3, layer: 0.52 },
-  { xf: 0.5, h: 250, depth: 4, layer: 1.0, tag: 'kill-jank', label: 'kill-jank', status: 'merged' },
+  { xf: 0.775, h: 250, depth: 4, layer: 1.0, tag: 'kill-jank', label: 'kill-jank', status: 'merged' },
   { xf: 0.865, h: 176, depth: 3, layer: 0.5 },
   { xf: 0.945, h: 224, depth: 4, layer: 0.82, tag: 'fix-prod', label: 'fix-prod', status: 'blocked' },
 ]
