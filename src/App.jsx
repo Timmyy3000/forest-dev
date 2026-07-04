@@ -53,7 +53,7 @@ function App() {
       style={{
         background: '#0D1512',
         color: '#EDE8D8',
-        fontFamily: "-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif",
+        fontFamily: "'Geist',-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif",
         minHeight: '100vh',
         WebkitFontSmoothing: 'antialiased',
       }}
@@ -148,16 +148,18 @@ function App() {
               gap: 16,
             }}
           >
-            <span
-              style={{
-                fontFamily: mono,
-                fontSize: 12.5,
-                letterSpacing: '0.14em',
-                textTransform: 'uppercase',
-                color: '#A3C585',
-              }}
-            >
-              git-forest&nbsp;·&nbsp;open source
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 9 }}>
+              <svg width="18" height="18" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                <path d="M8 14.5V7" stroke="#A3C585" strokeWidth="1.5" strokeLinecap="round" />
+                <path d="M8 9.5C8 7.8 6.6 7 5.2 6" stroke="#A3C585" strokeWidth="1.5" strokeLinecap="round" />
+                <path d="M8 7C8 5.3 9.4 4.5 10.8 3.5" stroke="#A3C585" strokeWidth="1.5" strokeLinecap="round" />
+                <circle cx="4.7" cy="5.6" r="1.3" fill="#A3C585" />
+                <circle cx="11.3" cy="3.1" r="1.3" fill="#A3C585" />
+                <circle cx="8" cy="6.4" r="1" fill="#A3C585" fillOpacity="0.7" />
+              </svg>
+              <span style={{ fontWeight: 500, fontSize: 15.5, letterSpacing: '0.01em', color: 'rgba(237,232,216,0.92)' }}>
+                git-forest
+              </span>
             </span>
             <a
               href={REPO}
@@ -170,8 +172,8 @@ function App() {
                 gap: 9,
                 textDecoration: 'none',
                 color: '#EDE8D8',
-                fontFamily: mono,
-                fontSize: 13,
+                fontSize: 13.5,
+                fontWeight: 500,
                 padding: '7px 12px',
                 border: '1px solid rgba(237,232,216,0.14)',
                 borderRadius: 8,
@@ -277,6 +279,17 @@ function App() {
                   {copied ? 'copied' : 'copy'}
                 </span>
               </button>
+              <p
+                style={{
+                  margin: '14px auto 0',
+                  fontSize: 13,
+                  fontWeight: 400,
+                  letterSpacing: '0.01em',
+                  color: 'rgba(237,232,216,0.45)',
+                }}
+              >
+                free &amp; open source&nbsp;&nbsp;·&nbsp;&nbsp;MIT license
+              </p>
               <span
                 aria-live="polite"
                 style={{ position: 'absolute', width: 1, height: 1, overflow: 'hidden', clip: 'rect(0 0 0 0)' }}
@@ -288,8 +301,7 @@ function App() {
 
           <footer
             style={{
-              fontFamily: mono,
-              fontSize: 12,
+              fontSize: 13,
               color: 'rgba(237,232,216,0.5)',
               paddingTop: 8,
               display: 'flex',
