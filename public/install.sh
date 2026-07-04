@@ -19,27 +19,37 @@ case "$ARCH" in
   *) err "unsupported architecture: $ARCH"; exit 1 ;;
 esac
 case "$OS" in
-  linux|darwin) ;;
-  mingw*|msys*|cygwin*) OS="windows" ;;
+  linux|darwin) ASSET="forest_${OS}_${ARCH}.tar.gz"; BINFILE="forest" ;;
+  mingw*|msys*|cygwin*) OS="windows"; ASSET="forest_windows_${ARCH}.zip"; BINFILE="forest.exe" ;;
   *) err "unsupported OS: $OS"; exit 1 ;;
 esac
 
-EXT=""
-[ "$OS" = "windows" ] && EXT=".exe"
-
-# --- try a prebuilt release binary first ---
+# --- try a prebuilt release archive first ---
 LATEST_URL="https://api.github.com/repos/$REPO/releases/latest"
-ASSET="forest_${OS}_${ARCH}${EXT}"
 DOWNLOAD_URL=$(curl -fsSL "$LATEST_URL" 2>/dev/null \
-  | grep -o "\"browser_download_url\": *\"[^\"]*${ASSET}[^\"]*\"" \
+  | grep -o "\"browser_download_url\": *\"[^\"]*${ASSET}\"" \
   | head -1 | sed 's/.*"\(https[^"]*\)"/\1/') || DOWNLOAD_URL=""
 
 if [ -n "$DOWNLOAD_URL" ]; then
   info "downloading $ASSET ..."
+  TMP=$(mktemp -d)
+  trap 'rm -rf "$TMP"' EXIT
+  curl -fsSL "$DOWNLOAD_URL" -o "$TMP/$ASSET"
+  case "$ASSET" in
+    *.tar.gz) tar -xzf "$TMP/$ASSET" -C "$TMP" "$BINFILE" ;;
+    *.zip)
+      if command -v unzip >/dev/null 2>&1; then
+        unzip -oq "$TMP/$ASSET" "$BINFILE" -d "$TMP"
+      else
+        # bsdtar (built into Windows 10+) reads zip archives
+        tar -xf "$TMP/$ASSET" -C "$TMP" "$BINFILE"
+      fi
+      ;;
+  esac
   mkdir -p "$INSTALL_DIR"
-  curl -fsSL "$DOWNLOAD_URL" -o "$INSTALL_DIR/$BIN$EXT"
-  chmod +x "$INSTALL_DIR/$BIN$EXT"
-  info "installed $BIN to $INSTALL_DIR/$BIN$EXT"
+  mv "$TMP/$BINFILE" "$INSTALL_DIR/$BINFILE"
+  chmod +x "$INSTALL_DIR/$BINFILE"
+  info "installed $BIN to $INSTALL_DIR/$BINFILE"
   case ":$PATH:" in
     *":$INSTALL_DIR:"*) ;;
     *) info "note: add $INSTALL_DIR to your PATH" ;;
@@ -49,13 +59,13 @@ fi
 
 # --- fall back to go install when Go is available ---
 if command -v go >/dev/null 2>&1; then
-  info "no prebuilt binary for ${OS}/${ARCH} yet — building from source with go install ..."
+  info "no prebuilt archive for ${OS}/${ARCH} — building from source with go install ..."
   go install "github.com/$REPO/cmd/forest@latest"
   info "installed $BIN via go install (in \$(go env GOPATH)/bin)"
   exit 0
 fi
 
-err "no prebuilt binary available for ${OS}/${ARCH} and Go is not installed."
+err "no prebuilt archive available for ${OS}/${ARCH} and Go is not installed."
 err "install Go (https://go.dev/dl) and re-run, or build from source:"
 err "  git clone https://github.com/$REPO && cd git-forest && go build ./cmd/forest"
 exit 1
