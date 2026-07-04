@@ -276,7 +276,7 @@ function scene2(g, ctx, reduced) {
   const lblA = text(532, YA + 4, 'feat-a', { size: 11.5, fill: MOSS, anchor: 'start' })
   const lblB = text(532, YB + 4, 'feat-b', { size: 11.5, fill: BLUE, anchor: 'start' })
 
-  const head = chip(RIDE0 - 62, YA - 24, 'HEAD', PAPER, { fs: 10, h: 19 })
+  const head = chip(RIDE0 - 98, YA - 24, 'HEAD', PAPER, { fs: 10, h: 19 })
 
   // claude starts on feat-a; codex waits, parked by feat-b
   const claude = chip(RIDE0, YA - 24, 'claude', MOSS, { fs: 11, h: 22, icon: ICONS.claude, dot: MOSS })
@@ -287,7 +287,8 @@ function scene2(g, ctx, reduced) {
 
   const checkout = text(320, 312, '$ git checkout feat-b   # stash your changes first…', { size: 12, fill: AMBER })
   checkout.style.opacity = 0
-  const bang = text(320, 92, '✕ one checkout — you can’t both work at once', { size: 11.5, fill: RUST })
+  // shows where the checkout hint was — that line fades out before this appears
+  const bang = text(320, 312, '✕ one checkout — you can’t both work at once', { size: 11.5, fill: RUST })
   bang.style.opacity = 0
 
   ;[main, mainLbl, brA, brB, lblA, lblB, folder, annHead, head, claude, codex, ...cA, ...cB, checkout, bang].forEach((n) =>
