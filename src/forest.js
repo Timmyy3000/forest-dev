@@ -12,16 +12,16 @@ const GLOW = { progress: 'rgba(163,197,133,', merged: 'rgba(127,166,201,', block
 // tall & named trees live on the flanks (clear of the centred copy); the middle stays short
 const TREES = [
   { xf: 0.045, h: 168, depth: 3, layer: 0.3, status: 'merged' },
-  { xf: 0.135, h: 240, depth: 4, layer: 0.9, tag: 'fix-login', label: 'fix-login' },
+  { xf: 0.135, h: 240, depth: 4, layer: 0.9, tag: 'dark-mode', label: 'dark-mode' },
   { xf: 0.225, h: 150, depth: 3, layer: 0.5 },
   { xf: 0.32, h: 118, depth: 3, layer: 0.32 },
   { xf: 0.41, h: 140, depth: 3, layer: 0.5, status: 'blocked' },
   { xf: 0.5, h: 108, depth: 3, layer: 0.28 },
   { xf: 0.59, h: 134, depth: 3, layer: 0.44, status: 'merged' },
   { xf: 0.68, h: 150, depth: 3, layer: 0.52 },
-  { xf: 0.775, h: 250, depth: 4, layer: 1.0, tag: 'feat-login-copy', label: 'feat/login-copy', status: 'merged' },
+  { xf: 0.775, h: 250, depth: 4, layer: 1.0, tag: 'kill-jank', label: 'kill-jank', status: 'merged' },
   { xf: 0.865, h: 176, depth: 3, layer: 0.5 },
-  { xf: 0.945, h: 224, depth: 4, layer: 0.82, tag: 'billing-tests', label: 'billing-tests', status: 'blocked' },
+  { xf: 0.945, h: 224, depth: 4, layer: 0.82, tag: 'fix-prod', label: 'fix-prod', status: 'blocked' },
 ]
 
 export function mountForest(root) {

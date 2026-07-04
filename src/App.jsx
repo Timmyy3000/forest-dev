@@ -119,7 +119,7 @@ function App() {
             height="100%"
             preserveAspectRatio="xMidYMax meet"
             role="img"
-            aria-label="A forest of parallel worktrees growing from the main branch, commit by commit — many trees, many tasks, all visible at once, with fix-login, feat/login-copy, and billing-tests marked."
+            aria-label="A forest of parallel worktrees growing from the main branch, commit by commit — many trees, many tasks, all visible at once, with dark-mode, kill-jank, and fix-prod marked."
             style={{ display: 'block', overflow: 'visible', fontFamily: mono }}
           >
             <g data-forest-g="1" />
