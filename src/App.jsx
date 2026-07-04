@@ -325,6 +325,19 @@ function App() {
               >
                 GitHub
               </a>
+              &nbsp;·&nbsp;
+              <a
+                href="/agents.md"
+                className="fx-focus"
+                style={{
+                  color: 'rgba(237,232,216,0.72)',
+                  textDecoration: 'underline',
+                  textUnderlineOffset: 3,
+                  textDecorationColor: 'rgba(237,232,216,0.25)',
+                }}
+              >
+                agents.md
+              </a>
             </span>
             <span>
               built by{' '}
