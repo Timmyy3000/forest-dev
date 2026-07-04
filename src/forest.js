@@ -329,16 +329,16 @@ function buildVines(ctx, root, run) {
   }
 
   // hanging garlands: both ends anchored off-screen above the top edge,
-  // sagging into a crescent across the sky
+  // sagging into a small crescent — short and sparse
   const SPANS = [
-    [-90, 400],
-    [340, 880],
-    [810, 1300],
+    [70, 290],
+    [540, 730],
+    [990, 1200],
   ]
   SPANS.forEach(([a, b]) => {
-    const x1 = a + R(-30, 30)
-    const x2 = b + R(-30, 30)
-    const sag = R(95, 165)
+    const x1 = a + R(-25, 25)
+    const x2 = b + R(-25, 25)
+    const sag = R(50, 90)
     const base = cols[Math.floor(Math.random() * cols.length)]
     const vg = svgEl('g')
     const midX = (x1 + x2) / 2
@@ -355,7 +355,7 @@ function buildVines(ctx, root, run) {
     p.setAttribute('stroke-linecap', 'round')
     vg.appendChild(p)
     const L = p.getTotalLength()
-    const leaves = 3 + Math.floor(Math.random() * 3)
+    const leaves = 2 + Math.floor(Math.random() * 2)
     for (let k = 1; k <= leaves; k++) {
       const pt = p.getPointAtLength(L * (0.18 + (0.64 * k) / leaves))
       const c = svgEl('circle')
