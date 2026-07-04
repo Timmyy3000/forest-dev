@@ -25,15 +25,15 @@ const TREES = [
   { xf: 0.225, h: 150, depth: 3, layer: 0.5 },
   { xf: 0.32, h: 118, depth: 3, layer: 0.32 },
   { xf: 0.41, h: 140, depth: 3, layer: 0.5, status: 'blocked' },
-  { xf: 0.5, h: 108, depth: 3, layer: 0.28 },
+  { xf: 0.775, h: 108, depth: 3, layer: 0.28 },
   { xf: 0.59, h: 134, depth: 3, layer: 0.44, status: 'merged' },
   { xf: 0.68, h: 150, depth: 3, layer: 0.52 },
-  { xf: 0.775, h: 250, depth: 4, layer: 1.0, tag: 'kill-jank', label: 'kill-jank', status: 'merged' },
+  { xf: 0.5, h: 250, depth: 4, layer: 1.0, tag: 'kill-jank', label: 'kill-jank', status: 'merged' },
   { xf: 0.865, h: 176, depth: 3, layer: 0.5 },
   { xf: 0.945, h: 224, depth: 4, layer: 0.82, tag: 'fix-prod', label: 'fix-prod', status: 'blocked' },
 ]
 
-export function mountForest(root) {
+function makeCtx() {
   const ctx = {
     dead: false,
     reduced: window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches,
@@ -46,73 +46,115 @@ export function mountForest(root) {
     liveSpines: [],
     active: 0,
   }
-  const later = (fn, ms) => {
+  ctx.later = (fn, ms) => {
     const t = setTimeout(fn, ms)
     ctx.timers.push(t)
     return t
   }
-  const run = (targets, params) => {
+  ctx.run = (targets, params) => {
     const a = animate(targets, params)
     ctx.anims.push(a)
     return a
   }
-
-  const g = root.querySelector('[data-forest-g]')
-  const words = Array.from(root.querySelectorAll('[data-word]'))
-  if (!g) return () => {}
-
-  // narrower scene + bigger type on phones so the forest isn't postage-stamp sized
-  const mobile = window.innerWidth <= 820
-  const svg = root.querySelector('[data-forest]')
-  if (mobile && svg) svg.setAttribute('viewBox', '0 0 480 480')
-
-  buildForest(ctx, g, {
-    W: mobile ? 480 : 1200,
-    trees: mobile ? TREES_MOBILE : TREES,
-    fs: mobile ? 1.45 : 1,
-  })
-  buildVines(ctx, root, run)
-  const ground = ctx.ground
-
-  if (ctx.reduced) {
-    words.forEach((w) => {
-      w.style.transform = 'none'
-      w.style.opacity = 1
-    })
-    ground.style.strokeDashoffset = 0
-    ctx.segs.forEach((s) => {
-      s.pathEl.style.strokeDashoffset = 0
-    })
-    ctx.nodes.forEach((n) => {
-      n.style.transform = 'scale(1)'
-      n.style.opacity = n.dataset.baseOpacity
-    })
-    ctx.pills.forEach((p) => {
-      p.style.opacity = 1
-    })
-  } else {
-    words.forEach((w) => {
-      w.style.transform = 'translateY(102%)'
-      w.style.opacity = 0
-    })
-    const tl = createTimeline({ defaults: { ease: 'outCubic' } })
-    ctx.anims.push(tl)
-    tl.add(ground, { strokeDashoffset: [ground._len, 0], duration: 950, ease: 'inOutQuad' }, 0)
-    tl.add(words, { translateY: ['102%', '0%'], opacity: [0, 1], duration: 820, delay: stagger(130), ease: 'out(3)' }, 200)
-    tl.then(() => {
-      if (!ctx.dead) {
-        startGrowth(ctx, run, later)
-        startPulses(ctx, run, later)
-      }
-    })
-  }
-
-  return () => {
+  ctx.dispose = () => {
     ctx.dead = true
     ctx.timers.forEach(clearTimeout)
     ctx.anims.forEach((a) => {
       if (a && typeof a.pause === 'function') a.pause()
     })
+  }
+  return ctx
+}
+
+const isMobile = () => window.innerWidth <= 820
+
+export function mountForest(root) {
+  const g = root.querySelector('[data-forest-g]')
+  const words = Array.from(root.querySelectorAll('[data-word]'))
+  if (!g) return () => {}
+  const svg = root.querySelector('[data-forest]')
+
+  // vines live outside the rebuild cycle so resizing doesn't reset their sway
+  const vinesCtx = makeCtx()
+  buildVines(vinesCtx, root, vinesCtx.run)
+
+  let ctx = null
+  let currentMobile = null
+
+  // build (or rebuild) the forest for the current breakpoint.
+  // `first` gates the headline intro — on resize rebuilds the words stay put
+  // and the forest just regrows quickly.
+  const start = (mobile, first) => {
+    if (ctx) ctx.dispose()
+    ctx = makeCtx()
+    currentMobile = mobile
+    if (svg) svg.setAttribute('viewBox', mobile ? '0 0 480 480' : '0 0 1200 480')
+    buildForest(ctx, g, {
+      W: mobile ? 480 : 1200,
+      trees: mobile ? TREES_MOBILE : TREES,
+      fs: mobile ? 1.45 : 1,
+    })
+    const c = ctx
+    const ground = c.ground
+
+    if (c.reduced) {
+      words.forEach((w) => {
+        w.style.transform = 'none'
+        w.style.opacity = 1
+      })
+      ground.style.strokeDashoffset = 0
+      c.segs.forEach((s) => {
+        s.pathEl.style.strokeDashoffset = 0
+      })
+      c.nodes.forEach((n) => {
+        n.style.transform = 'scale(1)'
+        n.style.opacity = n.dataset.baseOpacity
+      })
+      c.pills.forEach((p) => {
+        p.style.opacity = 1
+      })
+      return
+    }
+
+    if (first) {
+      words.forEach((w) => {
+        w.style.transform = 'translateY(102%)'
+        w.style.opacity = 0
+      })
+      const tl = createTimeline({ defaults: { ease: 'outCubic' } })
+      c.anims.push(tl)
+      tl.add(ground, { strokeDashoffset: [ground._len, 0], duration: 950, ease: 'inOutQuad' }, 0)
+      tl.add(words, { translateY: ['102%', '0%'], opacity: [0, 1], duration: 820, delay: stagger(130), ease: 'out(3)' }, 200)
+      tl.then(() => {
+        if (!c.dead) {
+          startGrowth(c, c.run, c.later)
+          startPulses(c, c.run, c.later)
+        }
+      })
+    } else {
+      c.run(ground, { strokeDashoffset: [ground._len, 0], duration: 450, ease: 'inOutQuad' })
+      startGrowth(c, c.run, c.later)
+      startPulses(c, c.run, c.later)
+    }
+  }
+
+  start(isMobile(), true)
+
+  let resizeT
+  const onResize = () => {
+    clearTimeout(resizeT)
+    resizeT = setTimeout(() => {
+      const m = isMobile()
+      if (m !== currentMobile) start(m, false)
+    }, 200)
+  }
+  window.addEventListener('resize', onResize)
+
+  return () => {
+    window.removeEventListener('resize', onResize)
+    clearTimeout(resizeT)
+    if (ctx) ctx.dispose()
+    vinesCtx.dispose()
   }
 }
 
