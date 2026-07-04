@@ -8,6 +8,15 @@ const R = (a, b) => a + Math.random() * (b - a)
 const COL = { progress: '#A3C585', merged: '#7FA6C9', blocked: '#D9A05B' }
 const GLOW = { progress: 'rgba(163,197,133,', merged: 'rgba(127,166,201,', blocked: 'rgba(217,160,91,' }
 
+// mobile: fewer, bigger trees across a narrower scene so they read at phone size
+const TREES_MOBILE = [
+  { xf: 0.11, h: 215, depth: 4, layer: 0.85, tag: 'dark-mode', label: 'dark-mode' },
+  { xf: 0.33, h: 120, depth: 3, layer: 0.35 },
+  { xf: 0.53, h: 240, depth: 4, layer: 1.0, tag: 'kill-jank', label: 'kill-jank', status: 'merged' },
+  { xf: 0.73, h: 115, depth: 3, layer: 0.3, status: 'merged' },
+  { xf: 0.9, h: 205, depth: 4, layer: 0.8, tag: 'fix-prod', label: 'fix-prod', status: 'blocked' },
+]
+
 // many trees, spread out; three are named worktrees.
 // tall & named trees live on the flanks (clear of the centred copy); the middle stays short
 const TREES = [
@@ -52,7 +61,16 @@ export function mountForest(root) {
   const words = Array.from(root.querySelectorAll('[data-word]'))
   if (!g) return () => {}
 
-  buildForest(ctx, g)
+  // narrower scene + bigger type on phones so the forest isn't postage-stamp sized
+  const mobile = window.innerWidth <= 820
+  const svg = root.querySelector('[data-forest]')
+  if (mobile && svg) svg.setAttribute('viewBox', '0 0 480 480')
+
+  buildForest(ctx, g, {
+    W: mobile ? 480 : 1200,
+    trees: mobile ? TREES_MOBILE : TREES,
+    fs: mobile ? 1.45 : 1,
+  })
   buildVines(ctx, root, run)
   const ground = ctx.ground
 
@@ -98,9 +116,8 @@ export function mountForest(root) {
   }
 }
 
-function buildForest(ctx, g) {
+function buildForest(ctx, g, { W, trees, fs }) {
   g.innerHTML = ''
-  const W = 1200
   const groundY = 430
 
   const ground = svgEl('path')
@@ -122,7 +139,7 @@ function buildForest(ctx, g) {
   mainLbl.setAttribute('x', '40')
   mainLbl.setAttribute('y', groundY - 9)
   mainLbl.setAttribute('fill', 'rgba(237,232,216,0.6)')
-  mainLbl.setAttribute('font-size', '13.5')
+  mainLbl.setAttribute('font-size', (13.5 * fs).toFixed(1))
   mainLbl.setAttribute('letter-spacing', '0.04em')
   mainLbl.textContent = 'main'
   g.appendChild(mainLbl)
@@ -164,7 +181,7 @@ function buildForest(ctx, g) {
     return c
   }
 
-  TREES.forEach((cfg) => {
+  trees.forEach((cfg) => {
     const treeG = svgEl('g')
     if (cfg.tag) treeG.setAttribute('data-tree', cfg.tag)
     const x0 = 40 + cfg.xf * (W - 80)
@@ -221,10 +238,10 @@ function buildForest(ctx, g) {
       const c = col(cfg)
       const pg = svgEl('g')
       pg.style.opacity = '0'
-      const py = groundY - 52
-      const fs = 11.5
-      const tw = cfg.label.length * 6.7 + 18
-      const h = 20
+      const py = groundY - 52 * fs
+      const labelFs = 11.5 * fs
+      const tw = (cfg.label.length * 6.7 + 18) * fs
+      const h = 20 * fs
       const rect = svgEl('rect')
       rect.setAttribute('x', (x0 - tw / 2).toFixed(1))
       rect.setAttribute('y', (py - h / 2).toFixed(1))
@@ -237,9 +254,9 @@ function buildForest(ctx, g) {
       rect.setAttribute('stroke-width', '1')
       const t = svgEl('text')
       t.setAttribute('x', x0.toFixed(1))
-      t.setAttribute('y', (py + 4).toFixed(1))
+      t.setAttribute('y', (py + 4 * fs).toFixed(1))
       t.setAttribute('text-anchor', 'middle')
-      t.setAttribute('font-size', fs)
+      t.setAttribute('font-size', labelFs.toFixed(1))
       t.setAttribute('fill', '#EDE8D8')
       t.setAttribute('letter-spacing', '0.02em')
       t.textContent = cfg.label
@@ -248,24 +265,24 @@ function buildForest(ctx, g) {
 
       const st = cfg.status && cfg.status !== 'progress' ? cfg.status : null
       if (st) {
-        const sy = py - 25
-        const sh = 17
-        const sw = st.length * 6.4 + 16
+        const sy = py - 25 * fs
+        const sh = 17 * fs
+        const sw = (st.length * 6.4 + 16) * fs
         const sr = svgEl('rect')
         sr.setAttribute('x', (x0 - sw / 2).toFixed(1))
         sr.setAttribute('y', (sy - sh / 2).toFixed(1))
         sr.setAttribute('width', sw.toFixed(1))
         sr.setAttribute('height', sh)
-        sr.setAttribute('rx', '8.5')
+        sr.setAttribute('rx', (8.5 * fs).toFixed(1))
         sr.setAttribute('fill', '#0D1512')
         sr.setAttribute('stroke', c)
         sr.setAttribute('stroke-opacity', '0.75')
         sr.setAttribute('stroke-width', '1')
         const stt = svgEl('text')
         stt.setAttribute('x', x0.toFixed(1))
-        stt.setAttribute('y', (sy + 3.5).toFixed(1))
+        stt.setAttribute('y', (sy + 3.5 * fs).toFixed(1))
         stt.setAttribute('text-anchor', 'middle')
-        stt.setAttribute('font-size', '10')
+        stt.setAttribute('font-size', (10 * fs).toFixed(1))
         stt.setAttribute('fill', c)
         stt.setAttribute('letter-spacing', '0.06em')
         stt.textContent = st
