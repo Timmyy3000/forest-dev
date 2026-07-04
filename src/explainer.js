@@ -196,25 +196,31 @@ function scene1(g, ctx, reduced) {
     reveal(ctx, line, 600)
 
     // claude leaves the queue, drops to the line, and commits left to right
-    ctx.later(() => setDot(claude, MOSS), 900)
-    ctx.run(claude, { translateX: xsA[0] - QXS[0], translateY: ACTIVE_Y - QY, duration: 600, delay: 900, ease: 'inOutQuad' })
+    ctx.later(() => {
+      setDot(claude, MOSS)
+      ctx.run(claude, { translateX: xsA[0] - QXS[0], translateY: ACTIVE_Y - QY, duration: 600, ease: 'inOutQuad' })
+    }, 900)
     xsA.forEach((x, i) => {
       popIn(ctx, cA[i], 1700 + i * 650)
-      if (i > 0) ctx.run(claude, { translateX: x - QXS[0], duration: 450, delay: 1300 + i * 650, ease: 'inOutQuad' })
+      if (i > 0)
+        ctx.later(() => ctx.run(claude, { translateX: x - QXS[0], duration: 450, ease: 'inOutQuad' }), 1300 + i * 650)
     })
 
     // claude finishes and leaves; codex takes the line; cursor moves up the queue
     ctx.later(() => {
       if (ctx.dead) return
       ctx.run(claude, { opacity: [1, 0], duration: 450 })
-      ctx.later(() => setDot(codex, BLUE), 500)
-      ctx.run(codex, { translateX: xsB[0] - QXS[1], translateY: ACTIVE_Y - QY, duration: 600, delay: 450, ease: 'inOutQuad' })
-      ctx.run(cursor, { translateX: QXS[1] - QXS[2], duration: 500, delay: 500, ease: 'inOutQuad' })
+      ctx.later(() => {
+        setDot(codex, BLUE)
+        ctx.run(codex, { translateX: xsB[0] - QXS[1], translateY: ACTIVE_Y - QY, duration: 600, ease: 'inOutQuad' })
+        ctx.run(cursor, { translateX: QXS[1] - QXS[2], duration: 500, delay: 50, ease: 'inOutQuad' })
+      }, 480)
     }, 3700)
 
     xsB.forEach((x, i) => {
       popIn(ctx, cB[i], 5100 + i * 650)
-      if (i > 0) ctx.run(codex, { translateX: x - QXS[1], duration: 450, delay: 4700 + i * 650, ease: 'inOutQuad' })
+      if (i > 0)
+        ctx.later(() => ctx.run(codex, { translateX: x - QXS[1], duration: 450, ease: 'inOutQuad' }), 4700 + i * 650)
     })
 
     ctx.run(note, { opacity: [0, 1], duration: 500, delay: 6200 })
@@ -310,30 +316,36 @@ function scene2(g, ctx, reduced) {
     // claude rides feat-a, landing commits; codex waits
     ;[320, 400].forEach((x, i) => {
       popIn(ctx, cA[i], 1400 + i * 700)
-      ctx.run(claude, { translateX: x + 55 - RIDE0, duration: 500, delay: 1000 + i * 700, ease: 'inOutQuad' })
-      ctx.run(head, { translateX: x + 55 - RIDE0, duration: 500, delay: 1000 + i * 700, ease: 'inOutQuad' })
+      ctx.later(() => {
+        ctx.run(claude, { translateX: x + 55 - RIDE0, duration: 500, ease: 'inOutQuad' })
+        ctx.run(head, { translateX: x + 55 - RIDE0, duration: 500, ease: 'inOutQuad' })
+      }, 1000 + i * 700)
     })
 
     // the checkout dance: HEAD jumps branches, the agents trade places
     ctx.later(() => {
       if (ctx.dead) return
       ctx.run(checkout, { opacity: [0, 1], duration: 350 })
-      ctx.run(head, { translateY: YB - YA, duration: 600, delay: 400, ease: 'inOutQuad' })
-      // claude parks by feat-a, now waiting
-      ctx.run(claude, { translateX: PARK - RIDE0, duration: 650, delay: 400, ease: 'inOutQuad' })
+      ctx.later(() => {
+        ctx.run(head, { translateY: YB - YA, duration: 600, ease: 'inOutQuad' })
+        // claude parks by feat-a, now waiting
+        ctx.run(claude, { translateX: PARK - RIDE0, duration: 650, ease: 'inOutQuad' })
+        // codex takes the ride position on feat-b
+        ctx.run(codex, { translateX: RIDE0 - PARK, duration: 650, delay: 100, ease: 'inOutQuad' })
+      }, 400)
       ctx.later(() => {
         setDot(claude, AMBER)
         setDot(codex, BLUE)
       }, 1000)
-      // codex takes the ride position on feat-b
-      ctx.run(codex, { translateX: RIDE0 - PARK, duration: 650, delay: 500, ease: 'inOutQuad' })
     }, 3100)
 
     // codex rides feat-b
     ;[320, 400].forEach((x, i) => {
       popIn(ctx, cB[i], 5100 + i * 700)
-      ctx.run(codex, { translateX: RIDE0 - PARK + (x + 55 - RIDE0), duration: 500, delay: 4700 + i * 700, ease: 'inOutQuad' })
-      ctx.run(head, { translateX: x + 55 - RIDE0, duration: 500, delay: 4700 + i * 700, ease: 'inOutQuad' })
+      ctx.later(() => {
+        ctx.run(codex, { translateX: RIDE0 - PARK + (x + 55 - RIDE0), duration: 500, ease: 'inOutQuad' })
+        ctx.run(head, { translateX: x + 55 - RIDE0, duration: 500, ease: 'inOutQuad' })
+      }, 4700 + i * 700)
     })
 
     // both try to work at once — there's only one HEAD
