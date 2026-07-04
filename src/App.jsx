@@ -1,0 +1,368 @@
+import { useEffect, useRef, useState } from 'react'
+import { mountForest } from './forest.js'
+
+const INSTALL = 'go install github.com/Timmyy3000/git-forest/cmd/forest@latest'
+const REPO = 'https://github.com/Timmyy3000/git-forest'
+
+const mono = "'JetBrains Mono', monospace"
+
+function App() {
+  const rootRef = useRef(null)
+  const copyTimer = useRef(null)
+  const [stars, setStars] = useState('★ —')
+  const [copied, setCopied] = useState(false)
+
+  useEffect(() => {
+    const dispose = mountForest(rootRef.current)
+    return dispose
+  }, [])
+
+  useEffect(() => {
+    let dead = false
+    fetch('https://api.github.com/repos/Timmyy3000/git-forest')
+      .then((r) => (r.ok ? r.json() : Promise.reject()))
+      .then((d) => {
+        if (!dead && typeof d.stargazers_count === 'number') {
+          setStars('★ ' + d.stargazers_count.toLocaleString())
+        }
+      })
+      .catch(() => {})
+    return () => {
+      dead = true
+      clearTimeout(copyTimer.current)
+    }
+  }, [])
+
+  const copyInstall = () => {
+    const done = () => {
+      setCopied(true)
+      clearTimeout(copyTimer.current)
+      copyTimer.current = setTimeout(() => setCopied(false), 1800)
+    }
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(INSTALL).then(done).catch(done)
+    } else {
+      done()
+    }
+  }
+
+  return (
+    <div
+      ref={rootRef}
+      style={{
+        background: '#0D1512',
+        color: '#EDE8D8',
+        fontFamily: "-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif",
+        minHeight: '100vh',
+        WebkitFontSmoothing: 'antialiased',
+      }}
+    >
+      {/* ============ HERO ============ */}
+      <section
+        style={{
+          position: 'relative',
+          minHeight: '100vh',
+          display: 'flex',
+          flexDirection: 'column',
+          padding: 'clamp(24px,5vw,56px)',
+          maxWidth: 1240,
+          margin: '0 auto',
+          overflow: 'hidden',
+        }}
+      >
+        {/* faint atmosphere: a low horizon glow, a cool wash up top, a soft vignette */}
+        <div
+          aria-hidden="true"
+          style={{
+            position: 'absolute',
+            inset: 0,
+            zIndex: 0,
+            pointerEvents: 'none',
+            background:
+              'radial-gradient(135% 95% at 50% 116%, rgba(163,197,133,0.08), transparent 58%), radial-gradient(95% 75% at 50% -10%, rgba(127,166,201,0.05), transparent 60%), radial-gradient(145% 125% at 50% 46%, transparent 54%, rgba(0,0,0,0.32))',
+          }}
+        />
+
+        {/* translucent vines drooping from the top; barely there */}
+        <div
+          data-vines-wrap="1"
+          aria-hidden="true"
+          style={{ position: 'absolute', left: 0, right: 0, top: 0, height: '44%', zIndex: 0, pointerEvents: 'none' }}
+        >
+          <svg
+            data-vines="1"
+            viewBox="0 0 1200 300"
+            width="100%"
+            height="100%"
+            preserveAspectRatio="xMidYMin slice"
+            style={{ display: 'block', overflow: 'visible' }}
+          >
+            <g data-vines-g="1" />
+          </svg>
+        </div>
+
+        <header
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: 16,
+            position: 'relative',
+            zIndex: 2,
+          }}
+        >
+          <span
+            style={{
+              fontFamily: mono,
+              fontSize: 12.5,
+              letterSpacing: '0.14em',
+              textTransform: 'uppercase',
+              color: '#A3C585',
+            }}
+          >
+            git-forest&nbsp;·&nbsp;open source
+          </span>
+          <a
+            href={REPO}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="fx-focus"
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 9,
+              textDecoration: 'none',
+              color: '#EDE8D8',
+              fontFamily: mono,
+              fontSize: 13,
+              padding: '7px 12px',
+              border: '1px solid rgba(237,232,216,0.14)',
+              borderRadius: 8,
+              background: '#16241D',
+            }}
+          >
+            <svg width="17" height="17" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
+              <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0016 8c0-4.42-3.58-8-8-8z" />
+            </svg>
+            <span data-star-count="1">{stars}</span>
+          </a>
+        </header>
+
+        {/* The sky: headline, centered */}
+        <div
+          data-hero-grid="1"
+          style={{
+            flex: 1,
+            display: 'flex',
+            flexDirection: 'column',
+            minHeight: 0,
+            paddingTop: 'clamp(8px,2.5vw,34px)',
+          }}
+        >
+          <div style={{ maxWidth: 660, width: '100%', margin: '0 auto', textAlign: 'center', position: 'relative', zIndex: 2 }}>
+            <h1
+              style={{
+                fontFamily: "'Fraunces',Georgia,serif",
+                fontWeight: 600,
+                fontSize: 'clamp(40px,6vw,70px)',
+                lineHeight: 1.02,
+                letterSpacing: '-0.02em',
+                margin: '0 0 24px',
+                color: '#EDE8D8',
+              }}
+            >
+              <span style={{ display: 'block', overflow: 'hidden', paddingBottom: '0.06em' }}>
+                <span data-word="1" style={{ display: 'inline-block' }}>
+                  One&nbsp;trunk.
+                </span>
+              </span>
+              <span style={{ display: 'block', overflow: 'hidden', paddingBottom: '0.06em' }}>
+                <span data-word="2" style={{ display: 'inline-block', fontStyle: 'italic', fontWeight: 500, color: '#A3C585' }}>
+                  Many&nbsp;branches.
+                </span>
+              </span>
+            </h1>
+            <p
+              style={{
+                fontSize: 'clamp(15.5px,1.7vw,18px)',
+                lineHeight: 1.62,
+                color: 'rgba(237,232,216,0.82)',
+                margin: '0 auto 30px',
+                maxWidth: '40ch',
+              }}
+            >
+              Forest is a repo-local Git worktree manager for running coding agents in parallel. Every task gets its own
+              visible worktree under <code style={{ fontFamily: mono, fontSize: '0.9em', color: '#A3C585' }}>.forest/</code>.
+              Nothing scattered, nothing hidden.
+            </p>
+
+            <button
+              type="button"
+              onClick={copyInstall}
+              className="fx-focus"
+              aria-label="Copy install command"
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 14,
+                width: '100%',
+                maxWidth: 520,
+                margin: '0 auto',
+                textAlign: 'left',
+                cursor: 'pointer',
+                background: '#16241D',
+                border: '1px solid rgba(163,197,133,0.22)',
+                borderRadius: 10,
+                padding: '14px 16px',
+                color: '#EDE8D8',
+                fontFamily: mono,
+                fontSize: 13,
+                lineHeight: 1.4,
+              }}
+            >
+              <span aria-hidden="true" style={{ color: '#A3C585', flexShrink: 0 }}>
+                $
+              </span>
+              <span style={{ flex: 1, minWidth: 0, overflowX: 'auto', whiteSpace: 'nowrap', scrollbarWidth: 'none' }}>
+                {INSTALL}
+              </span>
+              <span
+                aria-hidden="true"
+                style={{
+                  flexShrink: 0,
+                  fontSize: 11,
+                  letterSpacing: '0.08em',
+                  textTransform: 'uppercase',
+                  color: copied ? '#A3C585' : 'rgba(237,232,216,0.4)',
+                  minWidth: 44,
+                  textAlign: 'right',
+                }}
+              >
+                {copied ? 'copied' : 'copy'}
+              </span>
+            </button>
+            <span
+              aria-live="polite"
+              style={{ position: 'absolute', width: 1, height: 1, overflow: 'hidden', clip: 'rect(0 0 0 0)' }}
+            >
+              {copied ? 'copied to clipboard' : ''}
+            </span>
+          </div>
+        </div>
+
+        {/* The signature: a forest that keeps growing, commit by commit */}
+        <div
+          data-forest-wrap="1"
+          style={{
+            position: 'absolute',
+            left: 0,
+            right: 0,
+            bottom: 46,
+            height: 'clamp(280px,50%,560px)',
+            zIndex: 0,
+            pointerEvents: 'none',
+          }}
+        >
+          <svg
+            data-forest="1"
+            viewBox="0 0 1200 480"
+            width="100%"
+            height="100%"
+            preserveAspectRatio="xMidYMax meet"
+            role="img"
+            aria-label="A forest of parallel worktrees growing from the main branch, commit by commit — many trees, many tasks, all visible at once, with fix-login, feat/login-copy, and billing-tests marked."
+            style={{ display: 'block', overflow: 'visible', fontFamily: mono }}
+          >
+            <g data-forest-g="1" />
+          </svg>
+        </div>
+
+        <footer
+          style={{
+            fontFamily: mono,
+            fontSize: 12,
+            color: 'rgba(237,232,216,0.5)',
+            paddingTop: 8,
+            position: 'relative',
+            zIndex: 2,
+          }}
+        >
+          MIT&nbsp;·&nbsp;
+          <a
+            href={REPO}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="fx-focus"
+            style={{
+              color: 'rgba(237,232,216,0.72)',
+              textDecoration: 'underline',
+              textUnderlineOffset: 3,
+              textDecorationColor: 'rgba(237,232,216,0.25)',
+            }}
+          >
+            GitHub
+          </a>
+        </footer>
+      </section>
+
+      {/* ============ THE LOOP ============ */}
+      <section
+        style={{
+          maxWidth: 1240,
+          margin: '0 auto',
+          padding: 'clamp(48px,7vw,96px) clamp(24px,5vw,56px) clamp(72px,9vw,120px)',
+          borderTop: '1px solid rgba(237,232,216,0.08)',
+        }}
+      >
+        <p
+          style={{
+            fontFamily: mono,
+            fontSize: 12.5,
+            letterSpacing: '0.14em',
+            textTransform: 'uppercase',
+            color: '#A3C585',
+            margin: '0 0 clamp(28px,4vw,44px)',
+          }}
+        >
+          the loop
+        </p>
+        <div data-loop-grid="1" style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 'clamp(20px,3vw,36px)' }}>
+          <LoopCard target="fix-login" caption="a branch and worktree, grown in one move">
+            <span style={{ color: '#A3C585' }}>forest</span> add fix-login
+          </LoopCard>
+          <LoopCard target="all" caption="every agent, every task, one table">
+            <span style={{ color: '#A3C585' }}>forest</span> list
+          </LoopCard>
+          <LoopCard target="billing-tests" caption="cleanup that checks before it cuts">
+            <span style={{ color: '#A3C585' }}>forest</span> close <span style={{ color: '#D9A05B' }}>--merged</span>
+          </LoopCard>
+        </div>
+      </section>
+    </div>
+  )
+}
+
+function LoopCard({ target, caption, children }) {
+  return (
+    <div
+      className="loop-card"
+      data-target={target}
+      tabIndex={0}
+      style={{
+        display: 'flex',
+        flexDirection: 'column',
+        gap: 14,
+        padding: '22px 22px 24px',
+        border: '1px solid rgba(237,232,216,0.09)',
+        borderRadius: 12,
+        background: '#16241D',
+        transition: 'border-color .25s, background .25s',
+      }}
+    >
+      <code style={{ fontFamily: mono, fontSize: 13.5, color: '#EDE8D8', lineHeight: 1.5 }}>{children}</code>
+      <span style={{ fontSize: 14, lineHeight: 1.55, color: 'rgba(237,232,216,0.72)' }}>{caption}</span>
+    </div>
+  )
+}
+
+export default App

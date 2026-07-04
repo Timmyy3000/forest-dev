@@ -1,0 +1,36 @@
+html,
+body {
+  margin: 0;
+  background: #0d1512;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+::selection {
+  background: rgba(163, 197, 133, 0.28);
+  color: #ede8d8;
+}
+
+.fx-focus:focus-visible {
+  outline: 2px solid #a3c585;
+  outline-offset: 3px;
+  border-radius: 2px;
+}
+
+@media (max-width: 820px) {
+  [data-loop-grid] {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+  [data-forest-wrap] {
+    height: 46% !important;
+    min-height: 280px;
+  }
+}
+
+@media (max-width: 440px) {
+  [data-forest-wrap] {
+    min-height: 240px;
+  }
+}
