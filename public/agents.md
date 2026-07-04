@@ -15,11 +15,19 @@ Key facts:
 
 ## Install
 
+macOS / Linux (and Git Bash / WSL on Windows):
+
 ```
 curl -fsSL https://forest.timi.click/install.sh | sh
 ```
 
-Or with Go: `go install github.com/Timmyy3000/git-forest/cmd/forest@latest`
+Windows (PowerShell):
+
+```
+irm https://forest.timi.click/install.ps1 | iex
+```
+
+Or with Go on any platform: `go install github.com/Timmyy3000/git-forest/cmd/forest@latest`
 
 Verify: `forest doctor` (run inside a Git repository).
 

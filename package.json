@@ -10,6 +10,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@phosphor-icons/react": "^2.1.10",
     "animejs": "^4.0.2",
     "react": "^19.2.7",
     "react-dom": "^19.2.7"

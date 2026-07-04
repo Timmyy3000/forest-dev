@@ -1,7 +1,11 @@
 import { useEffect, useRef, useState } from 'react'
+import { AppleLogo, LinuxLogo, WindowsLogo } from '@phosphor-icons/react'
 import { mountForest } from './forest.js'
 
-const INSTALL = 'curl -fsSL https://forest.timi.click/install.sh | sh'
+const INSTALLS = {
+  unix: { prompt: '$', cmd: 'curl -fsSL https://forest.timi.click/install.sh | sh' },
+  win: { prompt: '>', cmd: 'irm https://forest.timi.click/install.ps1 | iex' },
+}
 const REPO = 'https://github.com/Timmyy3000/git-forest'
 const TWITTER = 'https://x.com/timithechef'
 
@@ -12,6 +16,9 @@ function App() {
   const copyTimer = useRef(null)
   const [stars, setStars] = useState('★ —')
   const [copied, setCopied] = useState(false)
+  const [shell, setShell] = useState(() =>
+    typeof navigator !== 'undefined' && /Win/.test(navigator.platform || '') ? 'win' : 'unix'
+  )
 
   useEffect(() => {
     const dispose = mountForest(rootRef.current)
@@ -41,11 +48,24 @@ function App() {
       copyTimer.current = setTimeout(() => setCopied(false), 1800)
     }
     if (navigator.clipboard && navigator.clipboard.writeText) {
-      navigator.clipboard.writeText(INSTALL).then(done).catch(done)
+      navigator.clipboard.writeText(INSTALLS[shell].cmd).then(done).catch(done)
     } else {
       done()
     }
   }
+
+  const tabStyle = (active) => ({
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: 6,
+    padding: '6px 12px',
+    cursor: 'pointer',
+    background: active ? '#1C2F25' : 'transparent',
+    border: `1px solid ${active ? 'rgba(163,197,133,0.35)' : 'rgba(237,232,216,0.1)'}`,
+    borderRadius: 8,
+    color: active ? '#EDE8D8' : 'rgba(237,232,216,0.45)',
+    transition: 'border-color .2s, background .2s, color .2s',
+  })
 
   return (
     <div
@@ -234,6 +254,35 @@ function App() {
                 every feature at once. Godspeed.
               </p>
 
+              <div
+                role="tablist"
+                aria-label="Choose your platform"
+                style={{ display: 'flex', justifyContent: 'center', gap: 8, marginBottom: 12 }}
+              >
+                <button
+                  type="button"
+                  role="tab"
+                  aria-selected={shell === 'unix'}
+                  aria-label="macOS and Linux install command"
+                  className="fx-focus"
+                  onClick={() => setShell('unix')}
+                  style={tabStyle(shell === 'unix')}
+                >
+                  <AppleLogo size={16} weight="fill" />
+                  <LinuxLogo size={16} weight="fill" />
+                </button>
+                <button
+                  type="button"
+                  role="tab"
+                  aria-selected={shell === 'win'}
+                  aria-label="Windows install command"
+                  className="fx-focus"
+                  onClick={() => setShell('win')}
+                  style={tabStyle(shell === 'win')}
+                >
+                  <WindowsLogo size={16} weight="fill" />
+                </button>
+              </div>
               <button
                 type="button"
                 onClick={copyInstall}
@@ -259,10 +308,10 @@ function App() {
                 }}
               >
                 <span aria-hidden="true" style={{ color: '#A3C585', flexShrink: 0 }}>
-                  $
+                  {INSTALLS[shell].prompt}
                 </span>
                 <span style={{ flex: 1, minWidth: 0, overflowX: 'auto', whiteSpace: 'nowrap', scrollbarWidth: 'none' }}>
-                  {INSTALL}
+                  {INSTALLS[shell].cmd}
                 </span>
                 <span
                   aria-hidden="true"
