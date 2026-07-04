@@ -299,7 +299,6 @@ function App() {
             }}
           >
             <span>
-              MIT&nbsp;·&nbsp;
               <a
                 href={REPO}
                 target="_blank"

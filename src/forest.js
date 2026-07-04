@@ -327,6 +327,48 @@ function buildVines(ctx, root, run) {
     g.appendChild(vg)
     vines.push({ vg, amp: R(0.8, 1.8), dur: R(6200, 9600) })
   }
+
+  // hanging garlands: both ends anchored off-screen above the top edge,
+  // sagging into a crescent across the sky
+  const SPANS = [
+    [-90, 400],
+    [340, 880],
+    [810, 1300],
+  ]
+  SPANS.forEach(([a, b]) => {
+    const x1 = a + R(-30, 30)
+    const x2 = b + R(-30, 30)
+    const sag = R(95, 165)
+    const base = cols[Math.floor(Math.random() * cols.length)]
+    const vg = svgEl('g')
+    const midX = (x1 + x2) / 2
+    vg.style.transformBox = 'view-box'
+    vg.style.transformOrigin = `${midX.toFixed(1)}px 0px`
+    const p = svgEl('path')
+    p.setAttribute(
+      'd',
+      `M${x1.toFixed(1)},-12 C${(x1 + (x2 - x1) * 0.22).toFixed(1)},${(sag * 0.9).toFixed(1)} ${(x1 + (x2 - x1) * 0.78).toFixed(1)},${(sag * 0.9).toFixed(1)} ${x2.toFixed(1)},-12`
+    )
+    p.setAttribute('fill', 'none')
+    p.setAttribute('stroke', base + '0.10)')
+    p.setAttribute('stroke-width', R(1.1, 1.8).toFixed(2))
+    p.setAttribute('stroke-linecap', 'round')
+    vg.appendChild(p)
+    const L = p.getTotalLength()
+    const leaves = 3 + Math.floor(Math.random() * 3)
+    for (let k = 1; k <= leaves; k++) {
+      const pt = p.getPointAtLength(L * (0.18 + (0.64 * k) / leaves))
+      const c = svgEl('circle')
+      c.setAttribute('cx', pt.x.toFixed(1))
+      c.setAttribute('cy', pt.y.toFixed(1))
+      c.setAttribute('r', R(1.5, 2.6).toFixed(1))
+      c.setAttribute('fill', base + '0.12)')
+      vg.appendChild(c)
+    }
+    g.appendChild(vg)
+    vines.push({ vg, amp: R(0.35, 0.8), dur: R(7500, 11500) })
+  })
+
   if (ctx.reduced || ctx.dead) return
   vines.forEach((v) => run(v.vg, { rotate: [-v.amp, v.amp], duration: v.dur, loop: true, alternate: true, ease: 'inOutSine' }))
 }
