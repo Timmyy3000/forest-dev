@@ -43,6 +43,20 @@ function makeCtx() {
 
 // ---------- shared bits ----------
 
+// explanatory annotation — Geist, dim, so "explanation" reads differently from mono "code"
+function label(x, y, str, anchor = 'middle') {
+  const t = el('text')
+  t.setAttribute('x', x)
+  t.setAttribute('y', y)
+  t.setAttribute('fill', 'rgba(237,232,216,0.5)')
+  t.setAttribute('font-size', 11.5)
+  t.setAttribute('text-anchor', anchor)
+  t.setAttribute('font-family', "'Geist', sans-serif")
+  t.setAttribute('font-style', 'italic')
+  t.textContent = str
+  return t
+}
+
 function text(x, y, str, { size = 12, fill = DIM, anchor = 'middle', weight = 400 } = {}) {
   const t = el('text')
   t.setAttribute('x', x)
@@ -136,14 +150,17 @@ function scene1(g, ctx, reduced) {
   const Y = 205
   const folder = chip(320, 52, 'repo/  ·  main', PAPER)
   const line = hline(90, 550, Y)
-  const label = text(90, Y + 24, 'main', { size: 11.5, anchor: 'start' })
+  const lineLbl = text(90, Y + 24, 'main', { size: 11.5, anchor: 'start' })
   const agent = chip(150, Y - 46, 'agent-1', MOSS, { fs: 11.5, h: 23 })
   const st = status(196, Y - 42, 'working', MOSS)
   const xs = [160, 250, 340, 430, 520]
   const commits = xs.map((x) => commit(x, Y, MOSS))
   const note = text(320, 285, 'one change at a time, in a single line', { size: 12 })
   note.style.opacity = 0
-  ;[line, label, folder, agent, st, ...commits, note].forEach((n) => g.appendChild(n))
+  const ann1 = label(320, 78, 'the repo — one working folder')
+  const ann2 = label(150, Y - 74, 'a coding agent')
+  const ann3 = label(550, Y + 44, 'each dot = one commit', 'end')
+  ;[line, lineLbl, folder, agent, st, ...commits, note, ann1, ann2, ann3].forEach((n) => g.appendChild(n))
 
   if (reduced) {
     showAll([line, ...commits, note])
@@ -231,9 +248,11 @@ function scene2(g, ctx, reduced) {
 
   const checkout = text(320, 305, '$ git checkout feat-b   # stash your changes first…', { size: 12, fill: AMBER })
   checkout.style.opacity = 0
+  const ann1 = label(320, 64, 'still one working folder')
+  const ann2 = label(364, YA - 14, 'HEAD = the branch checked out right now', 'start')
 
-  ;[main, mainLbl, brA, brB, lblA, lblB, folder, head, agentA, agentB, stA, stB, ...cA, ...cB, checkout].forEach((n) =>
-    g.appendChild(n)
+  ;[main, mainLbl, brA, brB, lblA, lblB, folder, head, agentA, agentB, stA, stB, ...cA, ...cB, checkout, ann1, ann2].forEach(
+    (n) => g.appendChild(n)
   )
 
   if (reduced) {
@@ -288,7 +307,7 @@ function scene2(g, ctx, reduced) {
       setStatus(stA, 'working?', MOSS)
       setStatus(stB, 'working?', BLUE)
       ctx.run(folder, { translateX: [0, -5, 5, -4, 4, 0], duration: 450, delay: 450, ease: 'inOutQuad' })
-      const bang = text(320, 68, '✕ one checkout — you can’t both be here', { size: 11.5, fill: RUST })
+      const bang = text(320, 86, '✕ one checkout — you can’t both be here', { size: 11.5, fill: RUST })
       bang.style.opacity = 0
       g.appendChild(bang)
       ctx.run(bang, { opacity: [0, 1], duration: 300, delay: 500 })
@@ -352,7 +371,8 @@ function scene3(g, ctx, reduced) {
   })
   const note = text(320, GIT_Y + 26, 'every branch gets its own folder — everyone works at once', { size: 12 })
   note.style.opacity = 0
-  parts.push(note)
+  const ann1 = label(320, 30, 'each folder is a worktree — same repo, its own branch')
+  parts.push(note, ann1)
   parts.forEach((n) => g.appendChild(n))
 
   if (reduced) {

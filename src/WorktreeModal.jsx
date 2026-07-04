@@ -23,7 +23,7 @@ const STEPS = [
     badge: 'with worktrees',
     badgeColor: '#A3C585',
     caption:
-      'A worktree gives each branch its own folder, all sharing one .git. Three agents, three tasks, all committing at the same time — nobody waits, nothing collides.',
+      'A worktree gives each branch its own folder, all sharing one .git. Multiple agents, multiple tasks, all committing at the same time — nobody waits, nothing collides, no limit to how many.',
   },
 ]
 
