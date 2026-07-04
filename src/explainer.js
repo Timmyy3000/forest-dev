@@ -1,4 +1,4 @@
-import { animate, createTimeline } from 'animejs'
+import { animate } from 'animejs'
 import { ICONS } from './icons.js'
 
 const NS = 'http://www.w3.org/2000/svg'
@@ -27,11 +27,6 @@ function makeCtx() {
     ctx.anims.push(a)
     return a
   }
-  ctx.tl = (params) => {
-    const t = createTimeline(params)
-    ctx.anims.push(t)
-    return t
-  }
   ctx.dispose = () => {
     ctx.dead = true
     ctx.timers.forEach(clearTimeout)
@@ -44,7 +39,7 @@ function makeCtx() {
 
 // ---------- shared bits ----------
 
-// explanatory annotation — Geist, dim, so "explanation" reads differently from mono "code"
+// explanatory annotation — Geist italic, dim
 function label(x, y, str, anchor = 'middle') {
   const t = el('text')
   t.setAttribute('x', x)
@@ -58,7 +53,8 @@ function label(x, y, str, anchor = 'middle') {
   return t
 }
 
-function text(x, y, str, { size = 12, fill = DIM, anchor = 'middle', weight = 400 } = {}) {
+// mono text — code artifacts
+function text(x, y, str, { size = 12, fill = DIM, anchor = 'middle' } = {}) {
   const t = el('text')
   t.setAttribute('x', x)
   t.setAttribute('y', y)
@@ -66,16 +62,16 @@ function text(x, y, str, { size = 12, fill = DIM, anchor = 'middle', weight = 40
   t.setAttribute('font-size', size)
   t.setAttribute('text-anchor', anchor)
   t.setAttribute('font-family', MONO)
-  if (weight !== 400) t.setAttribute('font-weight', weight)
+  t.textContent = str
   return t
 }
 
-// a rounded chip with a mono label, centered on x; optional brand icon and status dot
-function chip(x, y, label, color, { w, h = 26, fs = 12.5, icon, dot } = {}) {
+// rounded chip centered on x: [icon] label [status dot]
+function chip(x, y, labelStr, color, { w, h = 26, fs = 12.5, icon, dot } = {}) {
   const g = el('g')
   const iconW = icon ? 19 : 0
-  const dotW = dot ? 14 : 0
-  const width = w || label.length * 7.6 + 22 + iconW + dotW
+  const dotW = dot ? 15 : 0
+  const width = w || Math.round(labelStr.length * 7.2 + 22 + iconW + dotW)
   const r = el('rect')
   r.setAttribute('x', x - width / 2)
   r.setAttribute('y', y - h / 2)
@@ -96,13 +92,12 @@ function chip(x, y, label, color, { w, h = 26, fs = 12.5, icon, dot } = {}) {
     ig.appendChild(ip)
     g.appendChild(ig)
   }
-  const t = text(x + iconW / 2 - dotW / 2, y + 4.5, label, { size: fs, fill: PAPER })
-  g.appendChild(t)
+  g.appendChild(text(x + iconW / 2 - dotW / 2, y + 4.5, labelStr, { size: fs, fill: PAPER }))
   if (dot) {
     const c = el('circle')
-    c.setAttribute('cx', x + width / 2 - 10)
+    c.setAttribute('cx', x + width / 2 - 10.5)
     c.setAttribute('cy', y)
-    c.setAttribute('r', 3)
+    c.setAttribute('r', 3.2)
     c.setAttribute('fill', dot)
     g.appendChild(c)
     g._dot = c
@@ -111,18 +106,7 @@ function chip(x, y, label, color, { w, h = 26, fs = 12.5, icon, dot } = {}) {
   return g
 }
 
-// small status dot + word to the side of an agent chip
-function status(x, y, word, color) {
-  const g = el('g')
-  const c = el('circle')
-  c.setAttribute('cx', x)
-  c.setAttribute('cy', y - 3.5)
-  c.setAttribute('r', 3.2)
-  c.setAttribute('fill', color)
-  g.appendChild(c)
-  g.appendChild(text(x + 9, y, word, { size: 11, fill: color, anchor: 'start' }))
-  return g
-}
+const setDot = (chipEl, color) => chipEl._dot && chipEl._dot.setAttribute('fill', color)
 
 function hline(x1, x2, y, color = LINE, width = 2) {
   const p = el('path')
@@ -150,12 +134,10 @@ function commit(x, y, color, r = 4.5) {
   return c
 }
 
-const popIn = (ctx, node, delay = 0) =>
-  ctx.run(node, { scale: [0, 1.3, 1], duration: 420, delay, ease: 'outBack(2.5)' })
+const popIn = (ctx, node, delay = 0) => ctx.run(node, { scale: [0, 1.25, 1], duration: 380, delay, ease: 'outBack(2)' })
 
-function reveal(ctx, path, dur = 500, delay = 0) {
+const reveal = (ctx, path, dur = 500, delay = 0) =>
   ctx.run(path, { strokeDashoffset: [path._len, 0], duration: dur, delay, ease: 'outQuad' })
-}
 
 function showAll(nodes) {
   nodes.forEach((n) => {
@@ -165,37 +147,35 @@ function showAll(nodes) {
   })
 }
 
-// ================= SCENE 1: one repo, one branch =================
+// ================= SCENE 1: one branch — agents wait in a queue =================
 
 function scene1(g, ctx, reduced) {
   g.innerHTML = ''
-  const Y = 215
-  const folder = chip(320, 44, 'repo/  \u00b7  main', PAPER, { icon: ICONS.git })
+  const Y = 226 // the main line
+  const ACTIVE_Y = 186 // where the working agent rides
+  const QY = 116 // the waiting queue row
+  const QXS = [150, 262, 374] // queue slots
+
+  const folder = chip(320, 42, 'repo/ · main', PAPER, { icon: ICONS.git })
+  const ann1 = label(320, 68, 'the repo — one working folder')
+  const annQ = label(96, QY - 26, 'the queue: waiting for the one checkout', 'start')
+
+  const claude = chip(QXS[0], QY, 'claude', MOSS, { fs: 11, h: 22, icon: ICONS.claude, dot: AMBER })
+  const codex = chip(QXS[1], QY, 'codex', BLUE, { fs: 11, h: 22, icon: ICONS.codex, dot: AMBER })
+  const cursor = chip(QXS[2], QY, 'cursor', AMBER, { fs: 11, h: 22, icon: ICONS.cursor, dot: AMBER })
+
   const line = hline(90, 550, Y)
   const lineLbl = text(90, Y + 24, 'main', { size: 11.5, anchor: 'start' })
-
-  // the queue: one agent works, the rest wait in line
-  const QX = 122
-  const SLOTS = [126, 158, 190]
-  const claude = chip(QX, SLOTS[0], 'claude', MOSS, { fs: 11, h: 22, icon: ICONS.claude })
-  const codex = chip(QX, SLOTS[1], 'codex', BLUE, { fs: 11, h: 22, icon: ICONS.codex })
-  const cursor = chip(QX, SLOTS[2], 'cursor', AMBER, { fs: 11, h: 22, icon: ICONS.cursor })
-  const sCodex = label(178, SLOTS[1] + 4, 'in queue\u2026', 'start')
-  const sCursor = label(178, SLOTS[2] + 4, 'in queue\u2026', 'start')
-
-  const ann1 = label(320, 70, 'the repo \u2014 one working folder')
-  const annQ = label(78, 98, 'agents queue for the one checkout', 'start')
   const ann3 = label(550, Y + 44, 'each dot = one commit', 'end')
 
-  const xsA = [200, 280, 360]
-  const xsB = [440, 520]
+  const xsA = [180, 270, 360]
+  const xsB = [450, 530]
   const cA = xsA.map((x) => commit(x, Y, MOSS))
   const cB = xsB.map((x) => commit(x, Y, BLUE))
-  const note = text(320, 292, 'one at a time \u2014 everyone else waits in line', { size: 12 })
+  const note = text(320, 300, 'one at a time — everyone else waits in line', { size: 12 })
   note.style.opacity = 0
-  ;[line, lineLbl, folder, claude, codex, cursor, sCodex, sCursor, ann1, annQ, ann3, ...cA, ...cB, note].forEach((n) =>
-    g.appendChild(n)
-  )
+
+  ;[line, lineLbl, folder, ann1, annQ, claude, codex, cursor, ann3, ...cA, ...cB, note].forEach((n) => g.appendChild(n))
 
   if (reduced) {
     showAll([line, ...cA, ...cB, note])
@@ -207,65 +187,73 @@ function scene1(g, ctx, reduced) {
     ;[...cA, ...cB].forEach((c) => (c.style.transform = 'scale(0)'))
     line.style.strokeDashoffset = line._len
     note.style.opacity = 0
-    ;[claude, codex, cursor, sCodex, sCursor].forEach((n) => {
+    ;[claude, codex, cursor].forEach((n) => {
       n.style.transform = ''
       n.style.opacity = 1
+      setDot(n, AMBER)
     })
 
     reveal(ctx, line, 600)
 
-    // claude steps out of the queue onto the line and commits
-    ctx.run(claude, { translateX: xsA[0] - QX, translateY: Y - 40 - SLOTS[0], duration: 550, delay: 900, ease: 'inOutQuad' })
+    // claude leaves the queue, drops to the line, and commits left to right
+    ctx.later(() => setDot(claude, MOSS), 900)
+    ctx.run(claude, { translateX: xsA[0] - QXS[0], translateY: ACTIVE_Y - QY, duration: 600, delay: 900, ease: 'inOutQuad' })
     xsA.forEach((x, i) => {
-      popIn(ctx, cA[i], 1600 + i * 600)
-      if (i > 0) ctx.run(claude, { translateX: x - QX, duration: 420, delay: 1250 + i * 600, ease: 'inOutQuad' })
+      popIn(ctx, cA[i], 1700 + i * 650)
+      if (i > 0) ctx.run(claude, { translateX: x - QXS[0], duration: 450, delay: 1300 + i * 650, ease: 'inOutQuad' })
     })
 
-    // claude finishes; codex moves up and takes over; cursor shuffles forward
+    // claude finishes and leaves; codex takes the line; cursor moves up the queue
     ctx.later(() => {
       if (ctx.dead) return
-      ctx.run(claude, { opacity: [1, 0], duration: 400 })
-      ctx.run(sCodex, { opacity: [1, 0], duration: 300 })
-      ctx.run(codex, { translateX: xsB[0] - QX, translateY: Y - 40 - SLOTS[1], duration: 600, delay: 250, ease: 'inOutQuad' })
-      ctx.run(cursor, { translateY: SLOTS[0] - SLOTS[2], duration: 450, delay: 250, ease: 'inOutQuad' })
-      ctx.run(sCursor, { translateY: SLOTS[0] - SLOTS[2], duration: 450, delay: 250, ease: 'inOutQuad' })
-    }, 3500)
+      ctx.run(claude, { opacity: [1, 0], duration: 450 })
+      ctx.later(() => setDot(codex, BLUE), 500)
+      ctx.run(codex, { translateX: xsB[0] - QXS[1], translateY: ACTIVE_Y - QY, duration: 600, delay: 450, ease: 'inOutQuad' })
+      ctx.run(cursor, { translateX: QXS[1] - QXS[2], duration: 500, delay: 500, ease: 'inOutQuad' })
+    }, 3700)
+
     xsB.forEach((x, i) => {
-      popIn(ctx, cB[i], 4500 + i * 600)
-      if (i > 0) ctx.run(codex, { translateX: x - QX, duration: 420, delay: 4150 + i * 600, ease: 'inOutQuad' })
+      popIn(ctx, cB[i], 5100 + i * 650)
+      if (i > 0) ctx.run(codex, { translateX: x - QXS[1], duration: 450, delay: 4700 + i * 650, ease: 'inOutQuad' })
     })
 
-    ctx.run(note, { opacity: [0, 1], duration: 500, delay: 5600 })
+    ctx.run(note, { opacity: [0, 1], duration: 500, delay: 6200 })
+
     ctx.later(() => {
       ctx.run(g, {
         opacity: [1, 0],
-        duration: 400,
+        duration: 450,
         onComplete: () => {
           if (ctx.dead) return
           g.style.opacity = 1
           play()
         },
       })
-    }, 8100)
+    }, 8800)
   }
   play()
 }
 
-// ================= SCENE 2: branches, but one folder =================
+// ================= SCENE 2: branches, but one checkout =================
 
 function scene2(g, ctx, reduced) {
   g.innerHTML = ''
-  const Y = 250
-  const YA = 168
-  const YB = 108
-  const FORK = 190
+  const Y = 262
+  const YA = 196
+  const YB = 124
+  const FORK = 175
+  const PARK = 116 // where the waiting agent sits
+  const RIDE0 = 285 // where the working agent starts riding
+
+  const folder = chip(320, 40, 'repo/ · one working folder', PAPER, { icon: ICONS.git })
+  const annHead = label(320, 66, 'HEAD = the branch checked out right now')
 
   const main = hline(90, 550, Y)
   const mainLbl = text(90, Y + 24, 'main', { size: 11.5, anchor: 'start' })
 
   const mkBranch = (yTop, color) => {
     const p = el('path')
-    p.setAttribute('d', `M${FORK},${Y} C${FORK + 45},${Y} ${FORK + 25},${yTop} ${FORK + 78},${yTop} L545,${yTop}`)
+    p.setAttribute('d', `M${FORK},${Y} C${FORK + 45},${Y} ${FORK + 25},${yTop} ${FORK + 78},${yTop} L520,${yTop}`)
     p.setAttribute('stroke', color)
     p.setAttribute('stroke-width', 2)
     p.setAttribute('fill', 'none')
@@ -279,28 +267,25 @@ function scene2(g, ctx, reduced) {
   }
   const brA = mkBranch(YA, MOSS)
   const brB = mkBranch(YB, BLUE)
-  const lblA = text(556, YA + 4, 'feat-a', { size: 11.5, fill: MOSS, anchor: 'start' })
-  const lblB = text(556, YB + 4, 'feat-b', { size: 11.5, fill: BLUE, anchor: 'start' })
+  const lblA = text(532, YA + 4, 'feat-a', { size: 11.5, fill: MOSS, anchor: 'start' })
+  const lblB = text(532, YB + 4, 'feat-b', { size: 11.5, fill: BLUE, anchor: 'start' })
 
-  const folder = chip(320, 40, 'repo/  ·  one working folder', PAPER, { icon: ICONS.git })
-  const head = chip(330, YA, 'HEAD', AMBER, { fs: 10.5, h: 20 })
-  head.style.transformBox = 'fill-box'
+  const head = chip(RIDE0 - 62, YA - 24, 'HEAD', PAPER, { fs: 10, h: 19 })
 
-  const agentA = chip(126, YA, 'claude', MOSS, { fs: 11, h: 22, icon: ICONS.claude })
-  const agentB = chip(126, YB, 'codex', BLUE, { fs: 11, h: 22, icon: ICONS.codex })
-  const stA = status(90, YA - 22, 'working', MOSS)
-  const stB = status(90, YB - 22, 'waiting…', AMBER)
+  // claude starts on feat-a; codex waits, parked by feat-b
+  const claude = chip(RIDE0, YA - 24, 'claude', MOSS, { fs: 11, h: 22, icon: ICONS.claude, dot: MOSS })
+  const codex = chip(PARK, YB - 24, 'codex', BLUE, { fs: 11, h: 22, icon: ICONS.codex, dot: AMBER })
 
-  const cA = [commit(300, YA, MOSS), commit(390, YA, MOSS)]
-  const cB = [commit(300, YB, BLUE), commit(390, YB, BLUE)]
+  const cA = [commit(320, YA, MOSS), commit(400, YA, MOSS)]
+  const cB = [commit(320, YB, BLUE), commit(400, YB, BLUE)]
 
-  const checkout = text(320, 305, '$ git checkout feat-b   # stash your changes first…', { size: 12, fill: AMBER })
+  const checkout = text(320, 312, '$ git checkout feat-b   # stash your changes first…', { size: 12, fill: AMBER })
   checkout.style.opacity = 0
-  const ann1 = label(320, 64, 'still one working folder')
-  const ann2 = label(364, YA - 14, 'HEAD = the branch checked out right now', 'start')
+  const bang = text(320, 92, '✕ one checkout — you can’t both work at once', { size: 11.5, fill: RUST })
+  bang.style.opacity = 0
 
-  ;[main, mainLbl, brA, brB, lblA, lblB, folder, head, agentA, agentB, stA, stB, ...cA, ...cB, checkout, ann1, ann2].forEach(
-    (n) => g.appendChild(n)
+  ;[main, mainLbl, brA, brB, lblA, lblB, folder, annHead, head, claude, codex, ...cA, ...cB, checkout, bang].forEach((n) =>
+    g.appendChild(n)
   )
 
   if (reduced) {
@@ -308,96 +293,95 @@ function scene2(g, ctx, reduced) {
     return
   }
 
-  const setStatus = (stEl, word, color) => {
-    stEl.innerHTML = ''
-    const c = el('circle')
-    c.setAttribute('cx', 90)
-    c.setAttribute('cy', (stEl === stA ? YA : YB) - 25.5)
-    c.setAttribute('r', 3.2)
-    c.setAttribute('fill', color)
-    stEl.appendChild(c)
-    stEl.appendChild(text(99, (stEl === stA ? YA : YB) - 22, word, { size: 11, fill: color, anchor: 'start' }))
-  }
-
   const play = () => {
     if (ctx.dead) return
     ;[...cA, ...cB].forEach((c) => (c.style.transform = 'scale(0)'))
     ;[main, brA, brB].forEach((p) => (p.style.strokeDashoffset = p._len))
     checkout.style.opacity = 0
-    head.style.transform = ''
-    setStatus(stA, 'working', MOSS)
-    setStatus(stB, 'waiting…', AMBER)
+    bang.style.opacity = 0
+    ;[head, claude, codex].forEach((n) => (n.style.transform = ''))
+    setDot(claude, MOSS)
+    setDot(codex, AMBER)
 
     reveal(ctx, main, 500)
-    reveal(ctx, brA, 500, 400)
-    reveal(ctx, brB, 500, 500)
+    reveal(ctx, brA, 550, 400)
+    reveal(ctx, brB, 550, 520)
 
-    // act 1: HEAD on feat-a, agent-1 commits, agent-2 waits
-    popIn(ctx, cA[0], 1200)
-    popIn(ctx, cA[1], 1800)
+    // claude rides feat-a, landing commits; codex waits
+    ;[320, 400].forEach((x, i) => {
+      popIn(ctx, cA[i], 1400 + i * 700)
+      ctx.run(claude, { translateX: x + 55 - RIDE0, duration: 500, delay: 1000 + i * 700, ease: 'inOutQuad' })
+      ctx.run(head, { translateX: x + 55 - RIDE0, duration: 500, delay: 1000 + i * 700, ease: 'inOutQuad' })
+    })
 
-    // act 2: checkout dance — HEAD jumps, amber warning flashes
+    // the checkout dance: HEAD jumps branches, the agents trade places
     ctx.later(() => {
       if (ctx.dead) return
       ctx.run(checkout, { opacity: [0, 1], duration: 350 })
-      ctx.run(head, { translateY: YB - YA, duration: 650, delay: 350, ease: 'inOutBack(1.4)' })
-      setStatus(stA, 'stashed · waiting…', AMBER)
-      setStatus(stB, 'working', BLUE)
-    }, 2600)
+      ctx.run(head, { translateY: YB - YA, duration: 600, delay: 400, ease: 'inOutQuad' })
+      // claude parks by feat-a, now waiting
+      ctx.run(claude, { translateX: PARK - RIDE0, duration: 650, delay: 400, ease: 'inOutQuad' })
+      ctx.later(() => {
+        setDot(claude, AMBER)
+        setDot(codex, BLUE)
+      }, 1000)
+      // codex takes the ride position on feat-b
+      ctx.run(codex, { translateX: RIDE0 - PARK, duration: 650, delay: 500, ease: 'inOutQuad' })
+    }, 3100)
 
-    // act 3: agent-2 commits, agent-1 waits
-    popIn(ctx, cB[0], 3900)
-    popIn(ctx, cB[1], 4500)
+    // codex rides feat-b
+    ;[320, 400].forEach((x, i) => {
+      popIn(ctx, cB[i], 5100 + i * 700)
+      ctx.run(codex, { translateX: RIDE0 - PARK + (x + 55 - RIDE0), duration: 500, delay: 4700 + i * 700, ease: 'inOutQuad' })
+      ctx.run(head, { translateX: x + 55 - RIDE0, duration: 500, delay: 4700 + i * 700, ease: 'inOutQuad' })
+    })
 
-    // act 4: both try at once — collision
+    // both try to work at once — there's only one HEAD
     ctx.later(() => {
       if (ctx.dead) return
-      setStatus(stA, 'working?', MOSS)
-      setStatus(stB, 'working?', BLUE)
-      ctx.run(folder, { translateX: [0, -5, 5, -4, 4, 0], duration: 450, delay: 450, ease: 'inOutQuad' })
-      const bang = text(320, 86, '✕ one checkout — you can’t both be here', { size: 11.5, fill: RUST })
-      bang.style.opacity = 0
-      g.appendChild(bang)
-      ctx.run(bang, { opacity: [0, 1], duration: 300, delay: 500 })
-      ctx.later(() => bang.remove(), 2600)
-    }, 5300)
+      setDot(claude, MOSS)
+      ctx.run(checkout, { opacity: [1, 0], duration: 300 })
+      ctx.run(folder, { translateX: [0, -5, 5, -4, 4, 0], duration: 480, delay: 400, ease: 'inOutQuad' })
+      ctx.run(bang, { opacity: [0, 1], duration: 350, delay: 450 })
+    }, 6800)
 
     ctx.later(() => {
       ctx.run(g, {
         opacity: [1, 0],
-        duration: 400,
+        duration: 450,
         onComplete: () => {
           if (ctx.dead) return
           g.style.opacity = 1
           play()
         },
       })
-    }, 8600)
+    }, 9400)
   }
   play()
 }
 
-// ================= SCENE 3: worktrees =================
+// ================= SCENE 3: worktrees — everyone at once =================
 
 function scene3(g, ctx, reduced) {
   g.innerHTML = ''
   const cols = [
-    { x: 150, color: MOSS, name: 'dark-mode/', agent: 'claude', icon: ICONS.claude },
-    { x: 320, color: BLUE, name: 'kill-jank/', agent: 'codex', icon: ICONS.codex },
-    { x: 490, color: AMBER, name: 'fix-prod/', agent: 'cursor', icon: ICONS.cursor },
+    { x: 150, color: MOSS, name: 'dark-mode/', icon: ICONS.claude },
+    { x: 320, color: BLUE, name: 'kill-jank/', icon: ICONS.codex },
+    { x: 490, color: AMBER, name: 'fix-prod/', icon: ICONS.cursor },
   ]
-  const TOP = 74
-  const BOT = 240
-  const GIT_Y = 298
+  const TOP = 58
+  const BOT = 236
+  const GIT_Y = 294
 
+  const ann1 = label(320, 26, 'each folder is a worktree — same repo, its own branch')
   const gitChip = chip(320, GIT_Y, 'one shared .git', PAPER, { fs: 11.5, h: 24, icon: ICONS.git })
-  const ann1 = label(320, 20, 'each folder is a worktree \u2014 same repo, its own branch')
-  const parts = [gitChip, ann1]
+  const parts = [ann1, gitChip]
+
   const perCol = cols.map((c) => {
-    const agent = chip(c.x, 42, c.agent, c.color, { fs: 11, h: 22, icon: c.icon, dot: c.color })
-    const folder = chip(c.x, TOP, c.name, c.color, { fs: 11.5, h: 24 })
+    // one rect per agent: logo + its worktree folder + a working dot, all inside
+    const card = chip(c.x, TOP, c.name, c.color, { fs: 11.5, h: 26, icon: c.icon, dot: c.color })
     const line = el('path')
-    line.setAttribute('d', `M${c.x},${BOT} L${c.x},${TOP + 20}`)
+    line.setAttribute('d', `M${c.x},${BOT} L${c.x},${TOP + 22}`)
     line.setAttribute('stroke', c.color)
     line.setAttribute('stroke-width', 2)
     line.setAttribute('stroke-opacity', '0.8')
@@ -408,17 +392,18 @@ function scene3(g, ctx, reduced) {
     line.style.strokeDashoffset = L
     line._len = L
     const link = el('path')
-    link.setAttribute('d', `M${c.x},${BOT + 10} C${c.x},${BOT + 40} 320,${GIT_Y - 40} 320,${GIT_Y - 14}`)
+    link.setAttribute('d', `M${c.x},${BOT + 10} C${c.x},${BOT + 38} 320,${GIT_Y - 38} 320,${GIT_Y - 14}`)
     link.setAttribute('stroke', 'rgba(237,232,216,0.25)')
     link.setAttribute('stroke-width', 1.3)
     link.setAttribute('fill', 'none')
     link.setAttribute('stroke-dasharray', '3 5')
-    const ys = [216, 178, 140, 108]
+    const ys = [212, 172, 132, 96]
     const commits = ys.map((y) => commit(c.x, y, c.color, 4))
-    parts.push(link, line, agent, folder, ...commits)
-    return { ...c, line, commits, folder, agent }
+    parts.push(link, line, card, ...commits)
+    return { ...c, line, commits, card }
   })
-  const note = text(320, GIT_Y + 26, 'every branch gets its own folder \u2014 everyone works at once', { size: 12 })
+
+  const note = text(320, GIT_Y + 26, 'every branch gets its own folder — everyone works at once', { size: 12 })
   note.style.opacity = 0
   parts.push(note)
   parts.forEach((n) => g.appendChild(n))
@@ -428,10 +413,10 @@ function scene3(g, ctx, reduced) {
     return
   }
 
-  // working dots pulse the whole time \u2014 everyone is live at once
+  // working dots pulse the whole time — everyone is live
   perCol.forEach((c, i) => {
-    if (c.agent._dot)
-      ctx.run(c.agent._dot, { opacity: [1, 0.25], duration: 900, delay: i * 300, loop: true, alternate: true, ease: 'inOutSine' })
+    if (c.card._dot)
+      ctx.run(c.card._dot, { opacity: [1, 0.25], duration: 900, delay: i * 300, loop: true, alternate: true, ease: 'inOutSine' })
   })
 
   const play = () => {
@@ -443,14 +428,13 @@ function scene3(g, ctx, reduced) {
     note.style.opacity = 0
     perCol.forEach((c, i) => {
       reveal(ctx, c.line, 700, 200 + i * 120)
-      // interleaved commits \u2014 everyone lands work at the same time
       c.commits.forEach((n, k) => popIn(ctx, n, 900 + k * 700 + i * 230))
     })
     ctx.run(note, { opacity: [0, 1], duration: 500, delay: 900 + 4 * 700 })
     ctx.later(() => {
       ctx.run(g, {
         opacity: [1, 0],
-        duration: 400,
+        duration: 450,
         onComplete: () => {
           if (ctx.dead) return
           g.style.opacity = 1
