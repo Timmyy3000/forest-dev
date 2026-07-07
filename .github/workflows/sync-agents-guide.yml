@@ -1,0 +1,40 @@
+name: sync-agents-guide
+
+# public/agents.md is a mirror of the canonical guide that ships with the
+# Forest CLI. Do not edit it here — change it in
+# Timmyy3000/git-forest:internal/cli/agents_guide.md instead. This workflow
+# pulls the canonical file on a schedule (or on demand via workflow_dispatch)
+# and commits when it changed; the push triggers the normal Dokploy deploy.
+
+on:
+  schedule:
+    - cron: "0 */6 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout site
+        uses: actions/checkout@v4
+
+      - name: Fetch canonical guide from git-forest
+        run: |
+          curl -fsSL --retry 3 \
+            https://raw.githubusercontent.com/Timmyy3000/git-forest/dev/internal/cli/agents_guide.md \
+            -o public/agents.md
+
+      - name: Commit and push if changed
+        run: |
+          if git diff --quiet public/agents.md; then
+            echo "agents.md already in sync"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add public/agents.md
+          git commit -m "Sync agents.md from git-forest canonical guide"
+          git push
