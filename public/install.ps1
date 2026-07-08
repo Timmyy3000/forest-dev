@@ -35,6 +35,15 @@ if ($DownloadUrl) {
             [Environment]::SetEnvironmentVariable('Path', "$UserPath;$InstallDir", 'User')
             Write-Info "added $InstallDir to your user PATH — restart your terminal to pick it up"
         }
+
+        # Warn about any other forest.exe on PATH that would shadow this
+        # install (e.g. a copy left in ~/.local/bin by an old install.sh run).
+        $others = @(Get-Command forest -All -ErrorAction SilentlyContinue |
+            Where-Object { $_.Source -and ($_.Source -ne $Target) })
+        foreach ($other in $others) {
+            Write-Host "warning: another forest at $($other.Source) may shadow the one just installed" -ForegroundColor Yellow
+            Write-Host "         remove it so 'forest' picks up new versions:  Remove-Item '$($other.Source)'" -ForegroundColor Yellow
+        }
     } finally {
         Remove-Item -Recurse -Force $Tmp -ErrorAction SilentlyContinue
     }
